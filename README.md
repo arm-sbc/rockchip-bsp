@@ -68,11 +68,13 @@ to use with SD card do the following (RK3399)
 create idblaoder , with two varinats
 
 tools/mkimage -n rk3399 -T rksd -d ..//rkbin/bin/rk33/rk3399_ddr_800MHz_v1.25.bin idbloader.img
+
 cat rk3399_loader_v1.25.126.bin >> idbloader.img
 
 or
 
 tools/mkimage -n rk3399 -T rksd -d tpl/u-boot-tpl.bin idbloader.img
+
 cat spl/u-boot-spl.bin >> idbloader.img
 
 then
