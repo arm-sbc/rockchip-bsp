@@ -1,5 +1,5 @@
 # rockchip-bsp
-Rockchip vendor BSP, jernel version 4.4 and uboot version 2017
+Rockchip vendor BSP, kernel version 4.4 and uboot version 2017
 
 to compile install follwing packages on Ubuntu/Debian host machine
 
