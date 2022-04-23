@@ -17,6 +17,9 @@ git clone https://github.com/arm-sbc/rkbin.git
 
 git clone https://github.com/arm-sbc/rkdeveloptool.git
 
+to install rkdeveloptool on host PC
+-----------------------------------
+
 cd rkdeveloptool
 
 ( you need gcc 9 to compile rkdeveloptool)
@@ -36,6 +39,9 @@ sudo make
 sudo make install
 
 cd ..
+
+to cpmile u-boot
+----------------
 
 cd rk-uboot
 
@@ -79,13 +85,44 @@ cat spl/u-boot-spl.bin >> idbloader.img
 
 then
 
+claen the SD card,   sudo dd if=/dev/zero of=/dev/sdx bs=8192
+
+then sudo fdisk /dev/sdx
+
+Command (m for help): n
+
+Partition type
+
+   p   primary (0 primary, 0 extended, 3 free)
+   
+   e   extended (container for logical partitions)
+   
+Select (default p): p
+
+Partition number (1-4, default 1): 1
+
+First sector (2048-61951999, default 2048): 100000
+
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (100000-61951999, default 61951999): (press enter)
+
+Created a new partition 1 of type 'Linux' and of size 29.5 GiB
+
+Command (m for help):w
+
+now, sudo mkfs.ext4 /dev/sdx1
+
 dd if=idbloader.img of=sdb seek=64
 
 dd if=uboot.img of=sdb seek=16384
 
 dd if=trust.img of=sdb seek=24576
 
+insert the SD card into the board and connect 12V power, board will boot without kernel, dtb files and rootfs
+
 cd ..
+
+to compile kernel
+-----------------
 
 cd rk-kernel
 
