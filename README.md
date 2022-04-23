@@ -130,7 +130,7 @@ rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc
 
 rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- menuconfig
 
-then sroll down to device drivers, networking, and check required wifi, bluetooth, touch screen drivers are enabled
+then scroll down to device drivers, networking, and check required wifi, bluetooth, touch screen drivers are enabled
 
 rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4 Image
 
