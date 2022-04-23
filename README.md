@@ -45,7 +45,8 @@ rk-uboot$ ./build.sh evb-rk3399 ( this will create uboot for rk3399-evb board)
 
 after compile there will be uboot.img, trust.img and rk3399_loader_v1.25.126.bin
 
-to use with eMMC do the following
+to use with eMMC do the following (RK3399)
+---------------------------------
 
 connect the baord to host PC through USB cable, get teh baord into Maskroom, ( press and hold uboot button while inserting power) , then release the uboot button, connect the board through UART2 port with 1500000 baud rate ( for 3399 boards, 3288 board has 115200 buad rtae)
 
@@ -60,6 +61,27 @@ rkdeveloptool wl 0x6000 trust.img
 rkdeveloptool rd
 
 board will boot but it doesnt ahve kerenel, dtb file and rootfs, let us create that 
+
+to use with SD card do the following (RK3399)
+------------------------------------
+
+create idblaoder , with two varinats
+
+tools/mkimage -n rk3399 -T rksd -d ..//rkbin/bin/rk33/rk3399_ddr_800MHz_v1.25.bin idbloader.img
+cat rk3399_loader_v1.25.126.bin >> idbloader.img
+
+or
+
+tools/mkimage -n rk3399 -T rksd -d tpl/u-boot-tpl.bin idbloader.img
+cat spl/u-boot-spl.bin >> idbloader.img
+
+then
+
+dd if=idbloader.img of=sdb seek=64
+
+dd if=uboot.img of=sdb seek=16384
+
+dd if=trust.img of=sdb seek=24576
 
 cd ..
 
