@@ -85,7 +85,7 @@ cat spl/u-boot-spl.bin >> idbloader.img
 
 then
 
-claen the SD card,   sudo dd if=/dev/zero of=/dev/sdx bs=8192
+clean the SD card,   sudo dd if=/dev/zero of=/dev/sdx bs=8192 ( this will delete all partitions in the SD card and will fill with zero)
 
 then sudo fdisk /dev/sdx
 
