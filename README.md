@@ -136,10 +136,57 @@ rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc
 
 rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4 dtbs
 
-for RK33288
+for RK3288
+
+rk-kernel$ make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- rockchip_linux_defconfig
+
+rk-kernel$ make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- -j4 zImage
+
+rk-kernel$ make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- dtbs
+
+it will create zImage ( arch/arm/boot) , and dtbs ( arch/arm/boot/dts for RK3288 )
+
+and 
+
+it will create Image ( arch/arm64/boot) , and dtbs ( arch/arm64/boot/dts/rockchip for RK33399 )
+
+Now we need to create boot.img, 
+
+rk-kernel$ mkdir boot ( then copy Image and dtb files to boot directory)
+
+cp arch/arm64/boot/Image boot/ , cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb boot/rk3399.dtb
+
+rk-kernel$  mkdir boot/extlinux
+
+nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
+
+label rockchip-kernel-4.4
+
+    kernel /Image
+    
+    fdt /rk3399.dtb
+    
+    append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init
+
+save , then 
+
+rk-kernel$ genext2fs -b 32768 -B $((32*1024*1024/32768)) -d boot/ -i 8192 -U boot_rk3399.img
+
+this will create a boot_rk3399.img
+
+then , for eMMC , power on the board while holiding down uboot button ( bring into Maskroom mode)
+
+rkdeveloptool db ..//rk-uboot/rk3399_loader_v1.25.126.bin
+
+rkdeveloptool wl 0x8000 boot_rk3399.img
+
+rkdeveloptool rd
+
+board will boot, it will find extlinux.conf, and will load dtb file and kernel,  BUT we still dont have rootfs, let us make it 
 
 
 
-it will create zImage/Image , and dtbs 
+
+
 
 
