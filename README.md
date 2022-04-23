@@ -66,7 +66,7 @@ rkdeveloptool wl 0x6000 trust.img
 
 rkdeveloptool rd
 
-board will boot but it doesnt ahve kerenel, dtb file and rootfs, let us create that 
+board will boot but it doesnt have kernel, dtb file and rootfs, let us create that in the next step
 
 to use with SD card do the following (RK3399)
 ------------------------------------
