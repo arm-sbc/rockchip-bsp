@@ -7,6 +7,8 @@ sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-
 
 https://github.com/arm-sbc/rockchip-bsp.git
 
+cd rockchip-bsp
+
 https://github.com/arm-sbc/rk-kernel.git
 
 https://github.com/arm-sbc/rk-uboot.git
@@ -15,6 +17,6 @@ https://github.com/arm-sbc/rkbin.git
 
 https://github.com/arm-sbc/rkdeveloptool.git
 
-cd rockchip-bsp/rk-uboot
+cd rk-uboot
 
 
