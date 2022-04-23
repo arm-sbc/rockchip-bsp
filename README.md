@@ -160,6 +160,11 @@ rk-kernel$  mkdir boot/extlinux
 
 nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
 
+label rockchip-kernel-4.4
+    kernel /Image
+    fdt /rk3399.dtb
+    append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init
+    
 save , then 
 
 rk-kernel$ genext2fs -b 32768 -B $((32*1024*1024/32768)) -d boot/ -i 8192 -U boot_rk3399.img
