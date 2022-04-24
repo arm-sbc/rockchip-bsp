@@ -20,6 +20,16 @@ sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-
 **to install rkdeveloptool on host PC**
 
 
+## Usage for 32bit Debian
+Building a base debian system by ubuntu-build-service from linaro.
+
+	sudo apt-get install binfmt-support qemu-user-static
+	sudo dpkg -i ubuntu-build-service/packages/*
+	sudo apt-get install -f
+	RELEASE=stretch TARGET=desktop ARCH=armhf ./mk-base-debian.sh
+
+Building the rk-debian rootfs:
+
 >cd rkdeveloptool
 
 ( you need gcc 9 to compile rkdeveloptool)
