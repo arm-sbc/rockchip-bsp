@@ -158,7 +158,7 @@ cp arch/arm64/boot/Image boot/ , cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb 
 
 rk-kernel$  mkdir boot/extlinux
 
-nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
+text= [nano boot/extlinux/extlinux.conf then copy below to extlinux.conf]
 
 label rockchip-kernel-4.4
     kernel /Image
