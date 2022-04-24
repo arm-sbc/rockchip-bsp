@@ -177,6 +177,7 @@ once you are in the chroot, do the following
 
 	passwd ( set root password)
 	adduser ( add a admin user)
+	apt update ( if apt update gives any error, it might be baecsue of the resolv.conf at etc/resolv.conf, dlete and create a new one with nameserver 8.8.8.8
 	apt install network-manager
 	apt install wireless-tools
 	
