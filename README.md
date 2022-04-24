@@ -70,26 +70,16 @@ clean the SD card, below command will delete all partitions in the SD card and w
 then 
 
 	sudo fdisk /dev/sdx
-	
-Command (m for help): n
-	
-Partition type
-
-   p   primary (0 primary, 0 extended, 3 free)
-   
-   e   extended (container for logical partitions)
-   
-Select (default p): p
-
-Partition number (1-4, default 1): 1
-
-First sector (2048-61951999, default 2048): 100000
-
-Last sector, +/-sectors or +/-size{K,M,G,T,P} (100000-61951999, default 61951999): (press enter)
-
-Created a new partition 1 of type 'Linux' and of size 29.5 GiB
-
-Command (m for help):w
+	Command (m for help): n
+	Partition type
+  	 	p   primary (0 primary, 0 extended, 3 free)
+    	   	e   extended (container for logical partitions)
+   	Select (default p): p
+	Partition number (1-4, default 1): 1
+	First sector (2048-61951999, default 2048): 100000
+	Last sector, +/-sectors or +/-size{K,M,G,T,P} (100000-61951999, default 61951999): (press enter)
+	Created a new partition 1 of type 'Linux' and of size 29.5 GiB
+	Command (m for help):w
 
 now, 
 	sudo mkfs.ext4 /dev/sdx1
@@ -104,6 +94,7 @@ cd ..
 **to compile kernel**
 
 cd rk-kernel ( for RK3399)
+
 	make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4   rockchip_linux_defconfig
 
 	make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- menuconfig
