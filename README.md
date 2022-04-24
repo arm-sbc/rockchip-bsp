@@ -3,7 +3,7 @@ Rockchip vendor BSP, kernel version 4.4 and uboot version 2017
 
 to compile install follwing packages on Ubuntu/Debian host machine
 
-sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-essential git debootstrap u-boot-tools device-tree-compiler libssl-dev libncurses-dev binfmt-support qemu-user-static pkg-config automake sudo ibudev-dev libusb-1.0-0-dev dh-autoreconf gawk python-is-python3 python3 
+	sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-essential git debootstrap u-boot-tools device-tree-compiler 		libssl-dev libncurses-dev binfmt-support qemu-user-static pkg-config automake sudo ibudev-dev libusb-1.0-0-dev dh-autoreconf gawk python-is-		python3 python3 
 
 	git clone https://github.com/arm-sbc/rockchip-bsp.git
 	cd rockchip-bsp
@@ -14,36 +14,16 @@ sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-
 
 **to install rkdeveloptool on host PC**
 
-
-## Usage for 32bit Debian
-Building a base debian system by ubuntu-build-service from linaro.
-
-	sudo apt-get install binfmt-support qemu-user-static
-	sudo dpkg -i ubuntu-build-service/packages/*
-	sudo apt-get install -f
-	RELEASE=stretch TARGET=desktop ARCH=armhf ./mk-base-debian.sh
-
-Building the rk-debian rootfs:
-
->cd rkdeveloptool
-
-( you need gcc 9 to compile rkdeveloptool)
-
->aclocal
-
->autoreconf -i
-
->autoheader
-
->automake --add-missing
-
->./configure
-
->sudo make
-
->sudo make install
-
->cd ..
+	cd rkdeveloptool
+	( you need gcc 9 to compile rkdeveloptool)
+	aclocal
+	autoreconf -i
+	autoheader
+	automake --add-missing
+	./configure
+	sudo make
+	sudo make install
+	cd ..
 
 **to cpmile u-boot**
 
