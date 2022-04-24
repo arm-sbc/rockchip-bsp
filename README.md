@@ -31,7 +31,7 @@ then
 
 	cd rk-uboot
 	ls configs | grep 3399 or 3288 
-( check correct defconfig)
+( check correct defconfig and use that to compile )
 
 	./build.sh evb-rk3399 
 ( this will create uboot for rk3399-evb board)
