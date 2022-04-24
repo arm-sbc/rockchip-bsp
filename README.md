@@ -82,6 +82,7 @@ then
 	Command (m for help):w
 
 now, 
+
 	sudo mkfs.ext4 /dev/sdx1
 	dd if=idbloader.img of=sdb seek=64
 	dd if=uboot.img of=sdb seek=16384
