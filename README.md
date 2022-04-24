@@ -167,8 +167,18 @@ you may download any variant, make sure that you download correct 32 or 64 bit v
 
 	mount /dev/sdx /mnt
 	tar xf 	rootfs.tar.xz -C /mnt
-	cp /usr/bin/qemu-aarch64-static
-	cp /usr/bin/qemu-arm-static
+	cp /usr/bin/qemu-aarch64-static /mnt/usr/bin ( for 64 bit) or
+	cp /usr/bin/qemu-arm-static /mnt/usr/bin ( for 32 bit )
+	sudo chroot /mnt
+	
+once you are in the chroot, do the following
+
+	passwd ( set root password)
+	adduser ( add a admin user)
+	apt install network-manager
+	apt install wireless-tools
+	
+	
 
 
 
