@@ -84,9 +84,9 @@ then
 now, 
 
 	sudo mkfs.ext4 /dev/sdx1
-	dd if=idbloader.img of=sdb seek=64
-	dd if=uboot.img of=sdb seek=16384
-	dd if=trust.img of=sdb seek=24576
+	dd if=idbloader.img of=sdx seek=64
+	dd if=uboot.img of=sdx seek=16384
+	dd if=trust.img of=sdx seek=24576
 
 insert the SD card into the board and connect 12V power, board will boot without kernel, dtb files and rootfs
 
