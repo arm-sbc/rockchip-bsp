@@ -161,7 +161,7 @@ rk-kernel$  mkdir boot/extlinux
 nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
 
 >label rockchip-kernel-4.4
->
+
     kernel /Image
     
     fdt /rk3399.dtb
