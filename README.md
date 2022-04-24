@@ -3,10 +3,11 @@ Rockchip vendor BSP, kernel version 4.4 and uboot version 2017
 
 to compile install follwing packages on Ubuntu/Debian host machine
 
-	sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-essential git debootstrap u-boot-tools device-tree-compiler / 		libssl-dev libncurses-dev binfmt-support qemu-user-static pkg-config automake sudo ibudev-dev libusb-1.0-0-dev dh-autoreconf gawk /
-	python-is-python3 python3 
+	sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-essential git debootstrap u-boot-tools device-tree-compiler  		libssl-dev libncurses-dev binfmt-support qemu-user-static pkg-config automake sudo ibudev-dev libusb-1.0-0-dev dh-autoreconf gawk python3
+	python-is-python3  
 	
 then
+
 	git clone https://github.com/arm-sbc/rockchip-bsp.git
 	cd rockchip-bsp
 	git clone https://github.com/arm-sbc/rk-kernel.git
@@ -29,13 +30,11 @@ then
 
 **to cpmile u-boot**
 
-
->cd rk-uboot
-
->rk-uboot$ ls configs | grep 3399 or 3288 
+	cd rk-uboot
+	ls configs | grep 3399 or 3288 
 ( check correct defconfig)
 
->rk-uboot$ >./build.sh evb-rk3399 
+	./build.sh evb-rk3399 
 ( this will create uboot for rk3399-evb board)
 
 after compile there will be uboot.img, trust.img and rk3399_loader_v1.25.126.bin
