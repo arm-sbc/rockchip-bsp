@@ -131,16 +131,24 @@ Now we need to create boot.img,
 	mkdir boot/extlinux
 	nano boot/extlinux/extlinux.conf 
 
-then copy below to extlinux.conf
+then copy below to extlinux.conf for rk3399
 
-	label rockchip-kernel-4.4
+	label srm-sbc-kernel 4.4
   		kernel /Image
   		fdt /rk3399.dtb
   	append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init
   
+  and for rk3288
+  
+  	label srm-sbc-kernel 4.4
+   		 kernel /zImage
+    		fdt /rk3288.dtb
+    	append earlyprintk console=ttyS2,1500000n8 rw root=PARTUUID=69dad710-2c rootwait rootfstype=ext4 init=/sbin/init
+  
 save , then 
 
-	genext2fs -b 32768 -B $((32*1024*1024/32768)) -d boot/ -i 8192 -U boot_rk3399.img
+	genext2fs -b 32768 -B $((32*1024*1024/32768)) -d boot/ -i 8192 -U boot_rk3399.img 
+	
 
 this will create a boot_rk3399.img
 
