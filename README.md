@@ -161,6 +161,7 @@ then , for eMMC , power on the board while holiding down uboot button ( bring in
 board will boot, it will find extlinux.conf, and will load dtb file and kernel,  BUT we still dont have rootfs, let us make it 
 
 # rootfs
+**option-1**
  
 there are rootfs available and published from linux containers. 
 check this https://images.linuxcontainers.org/images/
@@ -195,7 +196,8 @@ then copy Image, dtb file to boot folder of rootfs. and create a extlinux/extlin
   		fdt /rk3399.dtb
   	append earlycon=uart8250,mmio32,0xff1a0000 root=/dev/mmcblk0p1 rootwait rootfstype=ext4 init=/sbin/init
 	
-you also need to edit rk3399.dtsi or 3288.dtsi and chnage teh command line config to root=/dev/mmcblk0p1 from root=PARTUUID=69dad710-2c or similar.
+you also need to edit rk3399-linux.dtsi or 3288-linux .dtsi and chnage the bootargs line config to root=/dev/mmcblk0p1 from root=PARTUUID=69dad710-2c or similar.
+once done, put teh SD card to board and boot. you need to create fstab, add host name and install other related packages including desktop.
 
 
 
