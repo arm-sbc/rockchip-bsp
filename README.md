@@ -219,6 +219,11 @@ once done, put teh SD card to board and boot. you need to create fstab, add host
 	
 This will create linaro-rootfs.img 	
 	
+Bring the board to Maskroom then 
 
-
+	rkdeveloptool db ..//rk-uboot/rk3399_loader_v1.25.126.bin
+	rkdeveloptool wl 0x40000 linaro-rootfs.img
+	rkdeveloptool rd
+	
+Board will boot with rootfs.
 
