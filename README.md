@@ -17,8 +17,8 @@ git clone https://github.com/arm-sbc/rkbin.git
 
 git clone https://github.com/arm-sbc/rkdeveloptool.git
 
-to install rkdeveloptool on host PC
------------------------------------
+**to install rkdeveloptool on host PC**
+
 
 cd rkdeveloptool
 
