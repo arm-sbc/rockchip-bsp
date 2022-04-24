@@ -65,6 +65,7 @@ or
 then
 
 clean the SD card, below command will delete all partitions in the SD card and will fill with zero
+
 	sudo dd if=/dev/zero of=/dev/sdx bs=8192 
 then 
 	sudo fdisk /dev/sdx
