@@ -165,7 +165,7 @@ nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
     fdt /rk3399.dtb
     append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init"]
     
-    [copy text="Click Me" content="100OFF"]
+    [text="Click Me" content="100OFF"]
 
 save , then 
 
