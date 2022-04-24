@@ -20,34 +20,36 @@ sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-
 **to install rkdeveloptool on host PC**
 
 
-cd rkdeveloptool
+>cd rkdeveloptool
 
 ( you need gcc 9 to compile rkdeveloptool)
 
-aclocal
+>aclocal
 
-autoreconf -i
+>autoreconf -i
 
-autoheader
+>autoheader
 
-automake --add-missing
+>automake --add-missing
 
-./configure
+>./configure
 
-sudo make
+>sudo make
 
-sudo make install
+>sudo make install
 
-cd ..
+>cd ..
 
 **to cpmile u-boot**
 
 
-cd rk-uboot
+>cd rk-uboot
 
-rk-uboot$ ls configs | grep 3399 or 3288 ( check correct defconfig)
+>rk-uboot$ ls configs | grep 3399 or 3288 
+( check correct defconfig)
 
-rk-uboot$ >./build.sh evb-rk3399 ( this will create uboot for rk3399-evb board)
+>rk-uboot$ >./build.sh evb-rk3399 
+( this will create uboot for rk3399-evb board)
 
 after compile there will be uboot.img, trust.img and rk3399_loader_v1.25.126.bin
 
@@ -55,15 +57,15 @@ after compile there will be uboot.img, trust.img and rk3399_loader_v1.25.126.bin
 
 connect the baord to host PC through USB cable, get teh baord into Maskroom, ( press and hold uboot button while inserting power) , then release the uboot button, connect the board through UART2 port with 1500000 baud rate ( for 3399 boards, 3288 board has 115200 buad rtae)
 
-rkdeveloptool db rk3399_loader_v1.25.126.bin
+>rkdeveloptool db rk3399_loader_v1.25.126.bin
 
-rkdeveloptool ul rk3399_loader_v1.25.126.bin
+>rkdeveloptool ul rk3399_loader_v1.25.126.bin
 
-rkdeveloptool wl 0x4000 uboot.img
+>rkdeveloptool wl 0x4000 uboot.img
 
-rkdeveloptool wl 0x6000 trust.img
+>rkdeveloptool wl 0x6000 trust.img
 
-rkdeveloptool rd
+>rkdeveloptool rd
 
 board will boot but it doesnt have kernel, dtb file and rootfs, let us create that in the next step
 
@@ -72,15 +74,15 @@ board will boot but it doesnt have kernel, dtb file and rootfs, let us create th
 
 create idblaoder , with two varinats
 
-tools/mkimage -n rk3399 -T rksd -d ..//rkbin/bin/rk33/rk3399_ddr_800MHz_v1.25.bin idbloader.img
+>tools/mkimage -n rk3399 -T rksd -d ..//rkbin/bin/rk33/rk3399_ddr_800MHz_v1.25.bin idbloader.img
 
-cat rk3399_loader_v1.25.126.bin >> idbloader.img
+>cat rk3399_loader_v1.25.126.bin >> idbloader.img
 
 or
 
-tools/mkimage -n rk3399 -T rksd -d tpl/u-boot-tpl.bin idbloader.img
+>tools/mkimage -n rk3399 -T rksd -d tpl/u-boot-tpl.bin idbloader.img
 
-cat spl/u-boot-spl.bin >> idbloader.img
+>cat spl/u-boot-spl.bin >> idbloader.img
 
 then
 
@@ -108,13 +110,13 @@ Created a new partition 1 of type 'Linux' and of size 29.5 GiB
 
 Command (m for help):w
 
-now, sudo mkfs.ext4 /dev/sdx1
+now, >sudo mkfs.ext4 /dev/sdx1
 
-dd if=idbloader.img of=sdb seek=64
+>dd if=idbloader.img of=sdb seek=64
 
-dd if=uboot.img of=sdb seek=16384
+>dd if=uboot.img of=sdb seek=16384
 
-dd if=trust.img of=sdb seek=24576
+>dd if=trust.img of=sdb seek=24576
 
 insert the SD card into the board and connect 12V power, board will boot without kernel, dtb files and rootfs
 
@@ -123,24 +125,23 @@ cd ..
 **to compile kernel**
 
 cd rk-kernel ( for RK3399)
+>make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4   rockchip_linux_defconfig
 
-rk-kernel$ >make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4   rockchip_linux_defconfig
-
-rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- menuconfig
+>make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- menuconfig
 
 then scroll down to device drivers, networking, and check required wifi, bluetooth, touch screen drivers are enabled
 
-rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4 Image
+>make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4 Image
 
-rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4 dtbs
+>make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4 dtbs
 
 for RK3288
 
-rk-kernel$ make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- rockchip_linux_defconfig
+>make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- rockchip_linux_defconfig
 
-rk-kernel$ make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- -j4 zImage
+>make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- -j4 zImage
 
-rk-kernel$ make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- dtbs
+>make ARCH=arm CROSS_COMPILE=..//prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf- dtbs
 
 it will create zImage ( arch/arm/boot) , and dtbs ( arch/arm/boot/dts for RK3288 )
 
@@ -150,18 +151,20 @@ it will create Image ( arch/arm64/boot) , and dtbs ( arch/arm64/boot/dts/rockchi
 
 Now we need to create boot.img, 
 
-rk-kernel$ mkdir boot ( then copy Image and dtb files to boot directory)
+>mkdir boot 
+( then copy Image and dtb files to boot directory)
 
-cp arch/arm64/boot/Image boot/ , cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb boot/rk3399.dtb ( you need to use correct dtb file for your board)
+>cp arch/arm64/boot/Image boot/ , 
+cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb boot/rk3399.dtb ( you need to use correct dtb file for your board)
 
-rk-kernel$  mkdir boot/extlinux
+>mkdir boot/extlinux
 
-nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
+>nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
 
 >label rockchip-kernel-4.4
-  kernel /Image
-  fdt /rk3399.dtb
-  append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init<
+  >kernel /Image
+  >fdt /rk3399.dtb
+  >append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init<
   
 save , then 
 
