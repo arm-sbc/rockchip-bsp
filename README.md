@@ -40,19 +40,18 @@ sudo make install
 
 cd ..
 
-to cpmile u-boot
-----------------
+**to cpmile u-boot**
+
 
 cd rk-uboot
 
 rk-uboot$ ls configs | grep 3399 or 3288 ( check correct defconfig)
 
-rk-uboot$ ./build.sh evb-rk3399 ( this will create uboot for rk3399-evb board)
+rk-uboot$ >./build.sh evb-rk3399 ( this will create uboot for rk3399-evb board)
 
 after compile there will be uboot.img, trust.img and rk3399_loader_v1.25.126.bin
 
-to use with eMMC do the following (RK3399)
----------------------------------
+**to use with eMMC do the following (RK3399)**
 
 connect the baord to host PC through USB cable, get teh baord into Maskroom, ( press and hold uboot button while inserting power) , then release the uboot button, connect the board through UART2 port with 1500000 baud rate ( for 3399 boards, 3288 board has 115200 buad rtae)
 
@@ -68,8 +67,8 @@ rkdeveloptool rd
 
 board will boot but it doesnt have kernel, dtb file and rootfs, let us create that in the next step
 
-to use with SD card do the following (RK3399)
-------------------------------------
+**to use with SD card do the following (RK3399)**
+
 
 create idblaoder , with two varinats
 
@@ -121,12 +120,11 @@ insert the SD card into the board and connect 12V power, board will boot without
 
 cd ..
 
-to compile kernel
------------------
+**to compile kernel**
 
 cd rk-kernel ( for RK3399)
 
-rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4   rockchip_linux_defconfig
+rk-kernel$ >make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- -j4   rockchip_linux_defconfig
 
 rk-kernel$ make ARCH=arm64 CROSS_COMPILE=..//prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- menuconfig
 
