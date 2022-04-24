@@ -40,7 +40,7 @@ after compile there will be uboot.img, trust.img and rk3399_loader_v1.25.126.bin
 
 **to use with eMMC do the following (RK3399)**
 
-connect the baord to host PC through USB cable, get the board into Maskroom, ( press and hold uboot button while inserting power) , then release the uboot button, connect the board through UART2 port with 1500000 baud rate ( for 3399 boards, 3288 board has 115200 buad rate)
+connect the board to host PC through USB cable, get the board into Maskroom, ( press and hold uboot button while inserting power) , then release the uboot button, connect the board through UART2 port with 1500000 baud rate ( for 3399 boards, 3288 board has 115200 buad rate)
 
 	rkdeveloptool db rk3399_loader_v1.25.126.bin
 	rkdeveloptool ul rk3399_loader_v1.25.126.bin
@@ -52,7 +52,7 @@ board will boot, but it doesnt have kernel, dtb file and rootfs, let us create t
 
 **to use with SD card do the following (RK3399)**
 
-create idblaoder , with two varinats
+create idbloader , with two variants
 
 	tools/mkimage -n rk3399 -T rksd -d ..//rkbin/bin/rk33/rk3399_ddr_800MHz_v1.25.bin idbloader.img
 	cat rk3399_loader_v1.25.126.bin >> idbloader.img
@@ -64,7 +64,7 @@ or
 
 then
 
-clean the SD card, below coomand will delete all partitions in the SD card and will fill with zero) 
+clean the SD card, below command will delete all partitions in the SD card and will fill with zero
 	sudo dd if=/dev/zero of=/dev/sdx bs=8192 
 then 
 	sudo fdisk /dev/sdx
