@@ -159,14 +159,11 @@ cp arch/arm64/boot/Image boot/ , cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb 
 rk-kernel$  mkdir boot/extlinux
 
 nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
-
->label rockchip-kernel-4.4
-
-    kernel /Image
-    
-    fdt /rk3399.dtb
-    
-    append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init
+>
+label rockchip-kernel-4.4
+kernel /Image
+fdt /rk3399.dtb
+append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init
   
 save , then 
 
