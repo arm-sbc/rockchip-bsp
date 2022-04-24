@@ -187,8 +187,15 @@ once you are in the chroot, do the following
 	
 	rm /usr/bin-qemu-aach64-static
 	
-then copy Image, dtb file to boot folder of rootfs. and create a extlinux/etlinux.conf on the root.
+then copy Image, dtb file to boot folder of rootfs. and create a extlinux/extlinux.conf on the root as shown below
+
+
+	label arm-sbc-kernel 4.4
+  		kernel /Image
+  		fdt /rk3399.dtb
+  	append earlycon=uart8250,mmio32,0xff1a0000 root=/dev/mmcblk0p1 rootwait rootfstype=ext4 init=/sbin/init
 	
+you also need to edit rk3399.dtsi or 3288.dtsi and chnage teh command line config to root=/dev/mmcblk0p1 from root=PARTUUID=69dad710-2c or similar.
 
 
 
