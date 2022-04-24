@@ -199,7 +199,26 @@ then copy Image, dtb file to boot folder of rootfs. and create a extlinux/extlin
 you also need to edit rk3399-linux.dtsi or 3288-linux .dtsi and chnage the bootargs line config to root=/dev/mmcblk0p1 from root=PARTUUID=69dad710-2c or similar.
 once done, put teh SD card to board and boot. you need to create fstab, add host name and install other related packages including desktop.
 
+**option-2**
 
+	cd rk-rootfs-build
+	sudo dpkg -i ubuntu-build-service/packages/*
+	sudo apt-get install -f
+	
+**for 32 bit rootfs**
+	
+	RELEASE=stretch TARGET=desktop ARCH=armhf ./mk-base-debian.sh
+	RELEASE=stretch ARCH=armhf ./mk-rootfs.sh
+	./mk-image.sh
+		
+**for 64 bit rootfs**
+	
+	RELEASE=stretch TARGET=desktop ARCH=arm64 ./mk-base-debian.sh
+	RELEASE=stretch ARCH=arm64 ./mk-rootfs.sh
+	./mk-image.sh
+	
+This will create linaro-rootfs.img 	
+	
 
 
 
