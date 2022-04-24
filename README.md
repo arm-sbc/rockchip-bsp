@@ -163,7 +163,7 @@ nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
 [copy text= "label rockchip-kernel-4.4
     kernel /Image
     fdt /rk3399.dtb
-    append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init" content="100OFF"]
+    append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init"]
     
 save , then 
 
