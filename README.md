@@ -177,10 +177,17 @@ once you are in the chroot, do the following
 
 	passwd ( set root password)
 	adduser ( add a admin user)
-	apt update ( if apt update gives any error, it might be baecsue of the resolv.conf at etc/resolv.conf, dlete and create a new one with nameserver 8.8.8.8
+	apt update ( if apt update gives any error, it might be baecsue of the resolv.conf at etc/resolv.conf, 
+	create a new one with an entry like nameserver 8.8.8.8
 	apt install network-manager
 	apt install wireless-tools
+	systemctl enable serial-getty@ttyFIQ0.service  (for rk3288/3399 boards)
+	T0:2345:respawn:/sbin/getty -L ttyFIQ0 1500000 vt100 ( 3288 board  115200)
+	exit
 	
+	rm /usr/bin-qemu-aach64-static
+	
+then copy Image, dtb file to boot folder of rootfs. and create a extlinux/etlinux.conf on the root.
 	
 
 
