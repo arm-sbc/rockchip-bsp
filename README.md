@@ -125,8 +125,8 @@ Now we need to create boot.img,
 	mkdir boot 
 ( then copy Image and dtb files to boot directory)
 
-	cp arch/arm64/boot/Image boot/ , 
-cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb boot/rk3399.dtb ( you need to use correct dtb file for your board)
+	cp arch/arm64/boot/Image boot/ 
+	cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb  boot/rk3399.dtb ( you need to use correct dtb file for your board)
 
 	mkdir boot/extlinux
 	nano boot/extlinux/extlinux.conf 
