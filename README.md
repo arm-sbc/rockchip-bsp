@@ -33,7 +33,7 @@ then
 	ls configs | grep 3399 or 3288 
 ( check correct defconfig and use that to compile )
 
-	./build.sh evb-rk3399 
+	./make.sh.sh evb-rk3399 
 ( this will create uboot for rk3399-evb board)
 
 after compile there will be uboot.img, trust.img and rk3399_loader_v1.25.126.bin
