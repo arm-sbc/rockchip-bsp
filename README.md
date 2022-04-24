@@ -160,10 +160,12 @@ then , for eMMC , power on the board while holiding down uboot button ( bring in
 
 board will boot, it will find extlinux.conf, and will load dtb file and kernel,  BUT we still dont have rootfs, let us make it 
 
- ##rootfs
+# rootfs
  
-there are rootfs available and published from linux containers check this https://images.linuxcontainers.org/images/
-you may download any variant, make sure that you download correct 32 or 64 bit version. then untar to the sd card partion we created above.
+there are rootfs available and published from linux containers. 
+check this https://images.linuxcontainers.org/images/
+you may download any variant, make sure that you download correct 32 or 64 bit version. 
+then untar to the sd card partion we created above.
 
 	mount /dev/sdx /mnt
 	tar xf 	rootfs.tar.xz -C /mnt
