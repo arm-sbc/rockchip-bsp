@@ -133,14 +133,14 @@ Now we need to create boot.img,
 
 then copy below to extlinux.conf for rk3399
 
-	label srm-sbc-kernel 4.4
+	label arm-sbc-kernel 4.4
   		kernel /Image
   		fdt /rk3399.dtb
   	append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init
   
   and for rk3288
   
-  	label srm-sbc-kernel 4.4
+  	label arm-sbc-kernel 4.4
    		 kernel /zImage
     		fdt /rk3288.dtb
     	append earlyprintk console=ttyS2,1500000n8 rw root=PARTUUID=69dad710-2c rootwait rootfstype=ext4 init=/sbin/init
@@ -160,7 +160,15 @@ then , for eMMC , power on the board while holiding down uboot button ( bring in
 
 board will boot, it will find extlinux.conf, and will load dtb file and kernel,  BUT we still dont have rootfs, let us make it 
 
+ ##rootfs
+ 
+there are rootfs available and published from linux containers check this https://images.linuxcontainers.org/images/
+you may download any variant, make sure that you download correct 32 or 64 bit version. then untar to the sd card partion we created above.
 
+	mount /dev/sdx /mnt
+	tar xf 	rootfs.tar.xz -C /mnt
+	cp /usr/bin/qemu-aarch64-static
+	cp /usr/bin/qemu-arm-static
 
 
 
