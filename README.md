@@ -69,6 +69,7 @@ clean the SD card, below command will delete all partitions in the SD card and w
 	sudo dd if=/dev/zero of=/dev/sdx bs=8192 
 then 
 	sudo fdisk /dev/sdx
+	
 Command (m for help): n
 	
 Partition type
