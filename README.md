@@ -128,7 +128,9 @@ Now we need to create boot.img,
 cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb boot/rk3399.dtb ( you need to use correct dtb file for your board)
 
 	mkdir boot/extlinux
-	nano boot/extlinux/extlinux.conf then copy below to extlinux.conf
+	nano boot/extlinux/extlinux.conf 
+
+then copy below to extlinux.conf
 
 	label rockchip-kernel-4.4
   		kernel /Image
