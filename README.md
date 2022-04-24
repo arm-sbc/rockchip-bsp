@@ -1,4 +1,4 @@
-# rockchip-bsp
+## rockchip-bsp
 Rockchip vendor BSP, kernel version 4.4 and uboot version 2017
 
 to compile install follwing packages on Ubuntu/Debian host machine
@@ -164,21 +164,21 @@ cp arch/arm64/boot/dts/rockchip/rk3399-evb.dtb boot/rk3399.dtb ( you need to use
 >label rockchip-kernel-4.4
   >kernel /Image
   >fdt /rk3399.dtb
-  >append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init<
+  >append earlycon=uart8250,mmio32,0xff1a0000 root=PARTUUID=B921B045-1D rootwait rootfstype=ext4 init=/sbin/init
   
 save , then 
 
-rk-kernel$ genext2fs -b 32768 -B $((32*1024*1024/32768)) -d boot/ -i 8192 -U boot_rk3399.img
+>genext2fs -b 32768 -B $((32*1024*1024/32768)) -d boot/ -i 8192 -U boot_rk3399.img
 
 this will create a boot_rk3399.img
 
 then , for eMMC , power on the board while holiding down uboot button ( bring into Maskroom mode)
 
-rkdeveloptool db ..//rk-uboot/rk3399_loader_v1.25.126.bin
+>rkdeveloptool db ..//rk-uboot/rk3399_loader_v1.25.126.bin
 
-rkdeveloptool wl 0x8000 boot_rk3399.img
+>rkdeveloptool wl 0x8000 boot_rk3399.img
 
-rkdeveloptool rd
+>rkdeveloptool rd
 
 board will boot, it will find extlinux.conf, and will load dtb file and kernel,  BUT we still dont have rootfs, let us make it 
 
