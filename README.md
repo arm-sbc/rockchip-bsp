@@ -5,17 +5,12 @@ to compile install follwing packages on Ubuntu/Debian host machine
 
 sudo apt install flex bison gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu build-essential git debootstrap u-boot-tools device-tree-compiler libssl-dev libncurses-dev binfmt-support qemu-user-static pkg-config automake sudo ibudev-dev libusb-1.0-0-dev dh-autoreconf gawk python-is-python3 python3 
 
->git clone https://github.com/arm-sbc/rockchip-bsp.git
-
->cd rockchip-bsp
-
->git clone https://github.com/arm-sbc/rk-kernel.git
-
->git clone https://github.com/arm-sbc/rk-uboot.git
-
->git clone https://github.com/arm-sbc/rkbin.git
-
->git clone https://github.com/arm-sbc/rkdeveloptool.git
+	git clone https://github.com/arm-sbc/rockchip-bsp.git
+	cd rockchip-bsp
+	git clone https://github.com/arm-sbc/rk-kernel.git
+	git clone https://github.com/arm-sbc/rk-uboot.git
+	git clone https://github.com/arm-sbc/rkbin.git
+	git clone https://github.com/arm-sbc/rkdeveloptool.git
 
 **to install rkdeveloptool on host PC**
 
