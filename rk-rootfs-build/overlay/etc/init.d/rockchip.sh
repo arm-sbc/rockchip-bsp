@@ -10,45 +10,39 @@
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-function link_mali() {
-if [ "$1" == "rk3288" ];
-then
-    GPU_VERSION=$(cat /sys/devices/platform/*gpu/gpuinfo)
-    if echo $GPU_VERSION|grep -q r1p0;
-    then
-        dpkg -i  /packages/libmali/libmali-rk-midgard-t76x-r14p0-r1p0_*.deb #3288w
-    else
-        dpkg -i  /packages/libmali/libmali-rk-midgard-t76x-r14p0-r0p0_*.deb
-    fi
-    dpkg -i  /packages/libmali/libmali-rk-dev_*.deb
-elif [[  "$1" == "rk3328"  ]]; then
-    dpkg -i  /packages/libmali/libmali-rk-utgard-450-*.deb
-    dpkg -i  /packages/libmali/libmali-rk-dev_*.deb
-    mv /etc/X11/xorg.conf.d/20-modesetting.conf /etc/X11/xorg.conf.d/20-modesetting.conf.backup
-    mv /etc/X11/xorg.conf.d/20-armsoc.conf.backup /etc/X11/xorg.conf.d/20-armsoc.conf
-elif [[  "$1" == "rk3399"  ]]; then
-    dpkg -i  /packages/libmali/libmali-rk-midgard-t86x-*.deb
-    dpkg -i  /packages/libmali/libmali-rk-dev_*.deb
-elif [[  "$1" == "rk3399pro"  ]]; then
-    dpkg -i  /packages/libmali/libmali-rk-midgard-t86x-*.deb
-    dpkg -i  /packages/libmali/libmali-rk-dev_*.deb
-elif [[  "$1" == "rk3326"  ]]; then
-    dpkg -i  /packages/libmali/libmali-rk-bifrost-g31-*.deb
-    dpkg -i  /packages/libmali/libmali-rk-dev_*.deb
-elif [[  "$1" == "rk3036"  ]]; then
-    dpkg -i  /packages/libmali/libmali-rk-utgard-400-*.deb
-    dpkg -i  /packages/libmali/libmali-rk-dev_*.deb
-    mv /etc/X11/xorg.conf.d/20-modesetting.conf /etc/X11/xorg.conf.d/20-modesetting.conf.backup
-    mv /etc/X11/xorg.conf.d/20-armsoc.conf.backup /etc/X11/xorg.conf.d/20-armsoc.conf
-    # sed -i -e 's:"SWcursor"              "false":"SWcursor"              "true":' \
-    #     -i /etc/X11/xorg.conf.d/20-armsoc.conf
-fi
+install_mali() {
+    case $1 in
+        rk3288)
+            MALI=midgard-t76x-r18p0-r0p0
+
+            # 3288w
+            cat /sys/devices/platform/*gpu/gpuinfo | grep -q r1p0 && \
+                MALI=midgard-t76x-r18p0-r1p0
+            ;;
+        rk3399|rk3399pro)
+            MALI=midgard-t86x-r18p0
+            ;;
+        rk3328)
+            MALI=utgard-450
+            ;;
+        rk3326|px30)
+            MALI=bifrost-g31
+            ;;
+        rk3128|rk3036)
+            MALI=utgard-400
+            ;;
+        rk3568|rk3566)
+            MALI=bifrost-g52
+            ;;
+    esac
+
+    apt install -f /packages/libmali/libmali-*$MALI*-x11*.deb
 }
 
 function update_npu_fw() {
     /usr/bin/npu-image.sh
     sleep 1
-    /usr/bin/npu_transfer_proxy.proxy&
+    /usr/bin/npu_transfer_proxy&
 }
 
 COMPATIBLE=$(cat /proc/device-tree/compatible)
@@ -64,6 +58,12 @@ elif [[ $COMPATIBLE =~ "rk3399" ]]; then
     CHIPNAME="rk3399"
 elif [[ $COMPATIBLE =~ "rk3326" ]]; then
     CHIPNAME="rk3326"
+elif [[ $COMPATIBLE =~ "px30" ]]; then
+    CHIPNAME="px30"
+elif [[ $COMPATIBLE =~ "rk3128" ]]; then
+    CHIPNAME="rk3128"
+elif [[ $COMPATIBLE =~ "rk3568" ]]; then
+    CHIPNAME="rk3568"
 else
     CHIPNAME="rk3036"
 fi
@@ -76,17 +76,70 @@ then
     echo "It's the first time booting."
     echo "The rootfs will be configured."
 
-    link_mali ${CHIPNAME}
-    touch /usr/local/first_boot_flag
-    setcap CAP_SYS_ADMIN+ep /usr/bin/gst-launch-1.0
-    rm -rf /packages
+    # Force rootfs synced
+    mount -o remount,sync /
 
-    # Add cache sync here, prevent the os missing
-    sync
+    install_mali ${CHIPNAME}
+    setcap CAP_SYS_ADMIN+ep /usr/bin/gst-launch-1.0
+
+    # Cannot open pixbuf loader module file
+    if [ -e "/usr/lib/arm-linux-gnueabihf" ] ;
+    then
+	/usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/arm-linux-gnueabihf/gdk-pixbuf-2.0/2.10.0/loaders.cache
+	update-mime-database /usr/share/mime/
+    elif [ -e "/usr/lib/aarch64-linux-gnu" ];
+    then
+	/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders > /usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
+    fi
+
+    rm -rf /packages
 
     # The base target does not come with lightdm
     systemctl restart lightdm.service || true
+
+    touch /usr/local/first_boot_flag
 fi
+
+# enable adbd service
+if [ -e "/etc/init.d/adbd.sh" ] ;
+then
+    cd /etc/rcS.d
+    if [ ! -e "S01adbd.sh" ] ;
+    then
+        ln -s ../init.d/adbd.sh S01adbd.sh
+    fi
+    cd /etc/rc6.d
+    if [ ! -e "K01adbd.sh" ] ;
+    then
+        ln -s ../init.d/adbd.sh K01adbd.sh
+    fi
+
+    service adbd.sh start
+fi
+
+# support power management
+if [ -e "/usr/sbin/pm-suspend" -a -e /etc/Powermanageer ] ;
+then
+    mv /etc/Powermanager/power-key.sh /usr/bin/
+    mv /etc/Powermanager/power-key.conf /etc/triggerhappy/triggers.d/
+    if [[ "$CHIPNAME" == "rk3399pro" ]];
+    then
+        mv /etc/Powermanager/01npu /usr/lib/pm-utils/sleep.d/
+        mv /etc/Powermanager/02npu /lib/systemd/system-sleep/
+    fi
+    mv /etc/Powermanager/triggerhappy /etc/init.d/triggerhappy
+
+    rm /etc/Powermanager -rf
+    service triggerhappy restart
+fi
+
+# Create dummy video node for chromium V4L2 VDA/VEA with rkmpp plugin
+echo dec > /dev/video-dec0
+echo enc > /dev/video-enc0
+
+# The chromium using fixed pathes for libv4l2.so
+ln -rsf /usr/lib/*/libv4l2.so /usr/lib/
+[ -e /usr/lib/aarch64-linux-gnu/ ] && ln -Tsf lib /usr/lib64
 
 # read mac-address from efuse
 # if [ "$BOARDNAME" == "rk3288-miniarm" ]; then
