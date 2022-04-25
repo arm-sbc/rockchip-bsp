@@ -1,0 +1,3 @@
+[submodule "rkdeveloptool"]
+	path = rkdeveloptool
+	url = https://github.com/arm-sbc/rkdeveloptool.git
