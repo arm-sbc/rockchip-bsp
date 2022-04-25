@@ -207,14 +207,14 @@ once done, put teh SD card to board and boot. you need to create fstab, add host
 	
 **for 32 bit rootfs**
 	
-	RELEASE=stretch TARGET=desktop ARCH=armhf ./mk-base-debian.sh
-	RELEASE=stretch ARCH=armhf ./mk-rootfs.sh
+	RELEASE=buster TARGET=desktop ARCH=armhf ./mk-base-debian.sh
+	RELEASE=buster ARCH=armhf ./mk-rootfs.sh
 	./mk-image.sh
 		
 **for 64 bit rootfs**
 	
-	RELEASE=stretch TARGET=desktop ARCH=arm64 ./mk-base-debian.sh
-	RELEASE=stretch ARCH=arm64 ./mk-rootfs.sh
+	RELEASE=buster TARGET=desktop ARCH=arm64 ./mk-base-debian.sh
+	RELEASE=buster ARCH=arm64 ./mk-rootfs.sh
 	./mk-image.sh
 	
 This will create linaro-rootfs.img 	
