@@ -9,10 +9,8 @@ then
 
 	git clone https://github.com/arm-sbc/rockchip-bsp.git
 	cd rockchip-bsp
-	git clone https://github.com/arm-sbc/rk-kernel.git
-	git clone https://github.com/arm-sbc/rk-uboot.git
-	git clone https://github.com/arm-sbc/rkbin.git
-	git clone https://github.com/arm-sbc/rkdeveloptool.git
+	git submodule init
+	git submodule update
 
 **to install rkdeveloptool on host PC**
 
