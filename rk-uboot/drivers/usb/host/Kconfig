@@ -24,7 +24,6 @@ config USB_XHCI_DWC3
 config USB_XHCI_DWC3_OF_SIMPLE
 	bool "DesignWare USB3 DRD Generic OF Simple Glue Layer"
 	depends on DM_USB
-	default y if ARCH_ROCKCHIP
 	default y if DRA7XX
 	help
 	  Support USB2/3 functionality in simple SoC integrations with
@@ -47,15 +46,6 @@ config USB_XHCI_PCI
 	help
 	  Enables support for the PCI-based xHCI controller.
 
-config USB_XHCI_ROCKCHIP
-	bool "Support for Rockchip on-chip xHCI USB controller"
-	depends on ARCH_ROCKCHIP
-	depends on DM_REGULATOR
-	depends on DM_USB
-	default y
-	help
-	  Enables support for the on-chip xHCI controller on Rockchip SoCs.
-
 config USB_XHCI_RCAR
 	bool "Renesas RCar USB 3.0 support"
 	default y
@@ -63,15 +53,6 @@ config USB_XHCI_RCAR
 	help
 	  Choose this option to add support for USB 3.0 driver on Renesas
 	  RCar Gen3 SoCs.
-
-config USB_XHCI_STI
-	bool "Support for STMicroelectronics STiH407 family on-chip xHCI USB controller"
-	depends on ARCH_STI
-	default y
-	help
-	  Enables support for the on-chip xHCI controller on STMicroelectronics
-	  STiH407 family SoCs. This is a driver for the dwc3 to provide the glue logic
-	  to configure the controller.
 
 config USB_XHCI_DRA7XX_INDEX
 	int "DRA7XX xHCI USB index"
@@ -82,12 +63,6 @@ config USB_XHCI_DRA7XX_INDEX
 	  Select the DRA7XX xHCI USB index.
 	  Current supported values: 0, 1.
 
-config USB_XHCI_FSL
-	bool "Support for NXP Layerscape on-chip xHCI USB controller"
-	default y if ARCH_LS1021A || FSL_LSCH3 || FSL_LSCH2
-	depends on !SPL_NO_USB
-	help
-	  Enables support for the on-chip xHCI controller on NXP Layerscape SoCs.
 endif # USB_XHCI_HCD
 
 config USB_EHCI_HCD
@@ -125,13 +100,6 @@ config USB_EHCI_MARVELL
 	default y
 	---help---
 	  Enables support for the on-chip EHCI controller on MVEBU SoCs.
-
-config USB_EHCI_MX5
-	bool "Support for i.MX5 on-chip EHCI USB controller"
-	depends on ARCH_MX5
-	default n
-	help
-	  Enables support for the on-chip EHCI controller on i.MX5 SoCs.
 
 config USB_EHCI_MX6
 	bool "Support for i.MX6/i.MX7ULP on-chip EHCI USB controller"
@@ -175,23 +143,18 @@ config USB_EHCI_MSM
 	bool "Support for Qualcomm on-chip EHCI USB controller"
 	depends on DM_USB
 	select USB_ULPI_VIEWPORT
-	select MSM8916_USB_PHY
 	default n
 	---help---
 	  Enables support for the on-chip EHCI controller on Qualcomm
 	  Snapdragon SoCs.
+	  This driver supports combination of Chipidea USB controller
+	  and Synapsys USB PHY in host mode only.
 
 config USB_EHCI_PCI
 	bool "Support for PCI-based EHCI USB controller"
 	default y if X86
 	help
 	  Enables support for the PCI-based EHCI controller.
-
-config USB_EHCI_TEGRA
-	bool "Support for NVIDIA Tegra on-chip EHCI USB controller"
-	depends on TEGRA
-	---help---
-	  Enable support for Tegra on-chip EHCI USB controller
 
 config USB_EHCI_ZYNQ
 	bool "Support for Xilinx Zynq on-chip EHCI USB controller"
@@ -204,17 +167,10 @@ config USB_EHCI_GENERIC
 	bool "Support for generic EHCI USB controller"
 	depends on OF_CONTROL
 	depends on DM_USB
-	default ARCH_SUNXI
 	default n
 	---help---
 	  Enables support for generic EHCI controller.
 
-config USB_EHCI_FSL
-	bool  "Support for FSL on-chip EHCI USB controller"
-	default n
-	select  CONFIG_EHCI_HCD_INIT_AFTER_RESET
-	---help---
-	  Enables support for the on-chip EHCI controller on FSL chips.
 endif # USB_EHCI_HCD
 
 config USB_OHCI_HCD
@@ -242,7 +198,6 @@ config USB_OHCI_GENERIC
 	bool "Support for generic OHCI USB controller"
 	depends on OF_CONTROL
 	depends on DM_USB
-	default ARCH_SUNXI
 	select USB_HOST
 	---help---
 	  Enables support for generic OHCI controller.

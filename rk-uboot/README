@@ -1,7 +1,9 @@
-# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2000 - 2013
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+#
+# SPDX-License-Identifier:	GPL-2.0+
+#
 
 Summary:
 ========
@@ -83,7 +85,7 @@ Where we come from:
   * Provide extended interface to Linux boot loader
   * S-Record download
   * network boot
-  * ATA disk / SCSI ... boot
+  * PCMCIA / CompactFlash / ATA disk / SCSI ... boot
 - create ARMBoot project (http://sourceforge.net/projects/armboot)
 - add other CPU families (starting with ARM)
 - create U-Boot project (http://sourceforge.net/projects/u-boot)
@@ -141,7 +143,6 @@ Directory Hierarchy:
   /nios2		Files generic to Altera NIOS2 architecture
   /openrisc		Files generic to OpenRISC architecture
   /powerpc		Files generic to PowerPC architecture
-  /riscv		Files generic to RISC-V architecture
   /sandbox		Files generic to HW-independent "sandbox"
   /sh			Files generic to SH architecture
   /x86			Files generic to x86 architecture
@@ -212,7 +213,7 @@ board. This allows feature development which is not board- or architecture-
 specific to be undertaken on a native platform. The sandbox is also used to
 run some of U-Boot's tests.
 
-See doc/arch/index.rst for more details.
+See board/sandbox/README.sandbox for more details.
 
 
 Board Initialisation Flow:
@@ -267,13 +268,6 @@ board_init_f():
 	- preloader_console_init() can be called here in extremis
 	- should set up SDRAM, and anything needed to make the UART work
 	- these is no need to clear BSS, it will be done by crt0.S
-	- for specific scenarios on certain architectures an early BSS *can*
-	  be made available (via CONFIG_SPL_EARLY_BSS by moving the clearing
-	  of BSS prior to entering board_init_f()) but doing so is discouraged.
-	  Instead it is strongly recommended to architect any code changes
-	  or additions such to not depend on the availability of BSS during
-	  board_init_f() as indicated in other sections of this README to
-	  maintain compatibility and consistency across the entire code base.
 	- must return normally from this function (don't call board_init_r()
 		directly)
 
@@ -318,25 +312,17 @@ Many of the options are named exactly as the corresponding Linux
 kernel configuration options. The intention is to make it easier to
 build a config tool - later.
 
-- ARM Platform Bus Type(CCI):
-		CoreLink Cache Coherent Interconnect (CCI) is ARM BUS which
-		provides full cache coherency between two clusters of multi-core
-		CPUs and I/O coherency for devices and I/O masters
-
-		CONFIG_SYS_FSL_HAS_CCI400
-
-		Defined For SoC that has cache coherent interconnect
-		CCN-400
-
-		CONFIG_SYS_FSL_HAS_CCN504
-
-		Defined for SoC that has cache coherent interconnect CCN-504
 
 The following options need to be configured:
 
 - CPU Type:	Define exactly one, e.g. CONFIG_MPC85XX.
 
 - Board Type:	Define exactly one, e.g. CONFIG_MPC8540ADS.
+
+- Marvell Family Member
+		CONFIG_SYS_MVFS		- define it if you want to enable
+					  multiple fs option at one time
+					  for marvell soc family
 
 - 85xx CPU Options:
 		CONFIG_SYS_PPC64
@@ -493,6 +479,10 @@ The following options need to be configured:
 		PBI commands can be used to configure SoC before it starts the execution.
 		Please refer doc/README.pblimage for more details
 
+		CONFIG_SPL_FSL_PBL
+		It adds a target to create boot binary having SPL binary in PBI format
+		concatenated with u-boot binary.
+
 		CONFIG_SYS_FSL_DDR_BE
 		Defines the DDR controller register space as Big Endian
 
@@ -530,6 +520,25 @@ The following options need to be configured:
 		Offset relative to CONFIG_SYS_SDRAM_BASE for initial stack
 		pointer. This is needed for the temporary stack before
 		relocation.
+
+		CONFIG_SYS_MIPS_CACHE_MODE
+
+		Cache operation mode for the MIPS CPU.
+		See also arch/mips/include/asm/mipsregs.h.
+		Possible values are:
+			CONF_CM_CACHABLE_NO_WA
+			CONF_CM_CACHABLE_WA
+			CONF_CM_UNCACHED
+			CONF_CM_CACHABLE_NONCOHERENT
+			CONF_CM_CACHABLE_CE
+			CONF_CM_CACHABLE_COW
+			CONF_CM_CACHABLE_CUW
+			CONF_CM_CACHABLE_ACCELERATED
+
+		CONFIG_SYS_XWAY_EBU_BOOTCFG
+
+		Special option for Lantiq XWAY SoCs for booting from NOR flash.
+		See also arch/mips/cpu/mips32/start.S.
 
 		CONFIG_XWAY_SWAP_BYTES
 
@@ -637,6 +646,8 @@ The following options need to be configured:
 		the defaults discussed just above.
 
 - Cache Configuration:
+		CONFIG_SYS_ICACHE_OFF - Do not enable instruction cache in U-Boot
+		CONFIG_SYS_DCACHE_OFF - Do not enable data cache in U-Boot
 		CONFIG_SYS_L2CACHE_OFF- Do not enable L2 cache in U-Boot
 
 - Cache Configuration for ARM:
@@ -687,6 +698,38 @@ The following options need to be configured:
 		"ramboot" and "nfsboot" respectively, and can be used
 		as a convenience, when switching between booting from
 		RAM and NFS.
+
+- Bootcount:
+		CONFIG_BOOTCOUNT_LIMIT
+		Implements a mechanism for detecting a repeating reboot
+		cycle, see:
+		http://www.denx.de/wiki/view/DULG/UBootBootCountLimit
+
+		CONFIG_BOOTCOUNT_ENV
+		If no softreset save registers are found on the hardware
+		"bootcount" is stored in the environment. To prevent a
+		saveenv on all reboots, the environment variable
+		"upgrade_available" is used. If "upgrade_available" is
+		0, "bootcount" is always 0, if "upgrade_available" is
+		1 "bootcount" is incremented in the environment.
+		So the Userspace Applikation must set the "upgrade_available"
+		and "bootcount" variable to 0, if a boot was successfully.
+
+- Pre-Boot Commands:
+		CONFIG_PREBOOT
+
+		When this option is #defined, the existence of the
+		environment variable "preboot" will be checked
+		immediately before starting the CONFIG_BOOTDELAY
+		countdown and/or running the auto-boot command resp.
+		entering interactive mode.
+
+		This feature is especially useful when "preboot" is
+		automatically generated or modified. For an example
+		see the LWMON board specific code: here "preboot" is
+		modified when the user holds down a certain
+		combination of keys on the (special) keyboard when
+		booting the systems
 
 - Serial Download Echo Mode:
 		CONFIG_LOADS_ECHO
@@ -767,6 +810,17 @@ The following options need to be configured:
 		When using a watchdog circuitry external to the used
 		SoC, then define this variable and provide board
 		specific code for the "hw_watchdog_reset" function.
+
+		CONFIG_AT91_HW_WDT_TIMEOUT
+		specify the timeout in seconds. default 2 seconds.
+
+- U-Boot Version:
+		CONFIG_VERSION_VARIABLE
+		If this variable is defined, an environment variable
+		named "ver" is created by U-Boot showing the U-Boot
+		version as printed by the "version" command.
+		Any change to this variable will be reverted at the
+		next reset.
 
 - Real-Time Clock:
 
@@ -940,6 +994,9 @@ The following options need to be configured:
 			Define this to use i/o functions instead of macros
 			(some hardware wont work with macros)
 
+		CONFIG_DRIVER_TI_EMAC
+		Support for davinci emac
+
 			CONFIG_SYS_DAVINCI_EMAC_PHY_COUNT
 			Define this if you have more then 3 PHYs.
 
@@ -955,6 +1012,21 @@ The following options need to be configured:
 			control registers. This behavior won't affect the
 			correctnessof 10/100 link speed update.
 
+		CONFIG_SMC911X
+		Support for SMSC's LAN911x and LAN921x chips
+
+			CONFIG_SMC911X_BASE
+			Define this to hold the physical address
+			of the device (I/O space)
+
+			CONFIG_SMC911X_32_BIT
+			Define this if data bus is 32 bits
+
+			CONFIG_SMC911X_16_BIT
+			Define this if data bus is 16 bits. If your processor
+			automatically converts one 32 bit word to two 16 bit
+			words you may also try CONFIG_SMC911X_32_BIT.
+
 		CONFIG_SH_ETHER
 		Support for Renesas on-chip Ethernet controller
 
@@ -966,6 +1038,10 @@ The following options need to be configured:
 
 			CONFIG_SH_ETHER_CACHE_WRITEBACK
 			If this option is set, the driver enables cache flush.
+
+- PWM Support:
+		CONFIG_PWM_IMX
+		Support for PWM module on the imx6.
 
 - TPM Support:
 		CONFIG_TPM
@@ -1117,9 +1193,19 @@ The following options need to be configured:
 			CONFIG_SH_MMCIF_CLK
 			Define the clock frequency for MMCIF
 
+		CONFIG_SUPPORT_EMMC_BOOT
+		Enable some additional features of the eMMC boot partitions.
+
+		CONFIG_SUPPORT_EMMC_RPMB
+		Enable the commands for reading, writing and programming the
+		key for the Replay Protection Memory Block partition in eMMC.
+
 - USB Device Firmware Update (DFU) class support:
-		CONFIG_DFU_OVER_USB
+		CONFIG_USB_FUNCTION_DFU
 		This enables the USB portion of the DFU USB class
+
+		CONFIG_DFU_MMC
+		This enables support for exposing (e)MMC devices via DFU.
 
 		CONFIG_DFU_NAND
 		This enables support for exposing NAND devices via DFU.
@@ -1152,6 +1238,74 @@ The following options need to be configured:
 		Poll timeout [ms], which the device sends to the host when
 		entering dfuMANIFEST state. Host waits this timeout, before
 		sending again an USB request to the device.
+
+- Android Bootloader support:
+		CONFIG_CMD_BOOT_ANDROID
+		This enables the command "boot_android" which executes the
+		Android Bootloader flow. Enabling CONFIG_CMD_FASTBOOT is
+		recommended to support the Android Fastboot protocol as part
+		of the bootloader.
+
+		CONFIG_ANDROID_BOOTLOADER
+		This enables support for the Android bootloader flow. Android
+		devices can boot in normal mode, recovery mode or bootloader
+		mode. The normal mode is the most common boot mode, but
+		recovery mode is often used to perform factory reset and OTA
+		(over-the-air) updates in the legacy updater. Also it is
+		possible for an Android system to request a reboot to the
+		"bootloader", which often means reboot to fastboot but may also
+		include a UI with a menu.
+
+		CONFIG_ANDROID_BOOT_IMAGE
+		This enables support for booting images which use the Android
+		image format header.
+
+- USB Device Android Fastboot support:
+		CONFIG_USB_FUNCTION_FASTBOOT
+		This enables the USB part of the fastboot gadget
+
+		CONFIG_CMD_FASTBOOT
+		This enables the command "fastboot" which enables the Android
+		fastboot mode for the platform's USB device. Fastboot is a USB
+		protocol for downloading images, flashing and device control
+		used on Android devices.
+		See doc/README.android-fastboot for more information.
+
+		CONFIG_FASTBOOT_BUF_ADDR
+		The fastboot protocol requires a large memory buffer for
+		downloads. Define this to the starting RAM address to use for
+		downloaded images.
+
+		CONFIG_FASTBOOT_BUF_SIZE
+		The fastboot protocol requires a large memory buffer for
+		downloads. This buffer should be as large as possible for a
+		platform. Define this to the size available RAM for fastboot.
+
+		CONFIG_FASTBOOT_FLASH
+		The fastboot protocol includes a "flash" command for writing
+		the downloaded image to a non-volatile storage device. Define
+		this to enable the "fastboot flash" command.
+
+		CONFIG_FASTBOOT_FLASH_MMC_DEV
+		The fastboot "flash" command requires additional information
+		regarding the non-volatile storage device. Define this to
+		the eMMC device that fastboot should use to store the image.
+
+		CONFIG_FASTBOOT_GPT_NAME
+		The fastboot "flash" command supports writing the downloaded
+		image to the Protective MBR and the Primary GUID Partition
+		Table. (Additionally, this downloaded image is post-processed
+		to generate and write the Backup GUID Partition Table.)
+		This occurs when the specified "partition name" on the
+		"fastboot flash" command line matches this value.
+		The default is "gpt" if undefined.
+
+		CONFIG_FASTBOOT_MBR_NAME
+		The fastboot "flash" command supports writing the downloaded
+		image to DOS MBR.
+		This occurs when the "partition name" specified on the
+		"fastboot flash" command line matches this value.
+		If not defined the default value "mbr" is used.
 
 - Journaling Flash filesystem support:
 		CONFIG_JFFS2_NAND
@@ -1348,6 +1502,10 @@ The following options need to be configured:
 		be at least 4MB.
 
 - MII/PHY support:
+		CONFIG_PHY_ADDR
+
+		The address of PHY on MII bus.
+
 		CONFIG_PHY_CLOCK_FREQ (ppc4xx)
 
 		The clock frequency of the MII bus
@@ -1401,6 +1559,15 @@ The following options need to be configured:
 		forwarded through a router.
 		(Environment variable "netmask")
 
+- Multicast TFTP Mode:
+		CONFIG_MCAST_TFTP
+
+		Defines whether you want to support multicast TFTP as per
+		rfc-2090; for example to work with atftp.  Lets lots of targets
+		tftp down the same boot image concurrently.  Note: the Ethernet
+		driver in use must provide a function: mcast() to join/leave a
+		multicast group.
+
 - BOOTP Recovery Mode:
 		CONFIG_BOOTP_RANDOM_DELAY
 
@@ -1442,8 +1609,14 @@ The following options need to be configured:
 		You can fine tune the DHCP functionality by defining
 		CONFIG_BOOTP_* symbols:
 
+		CONFIG_BOOTP_SUBNETMASK
+		CONFIG_BOOTP_GATEWAY
+		CONFIG_BOOTP_HOSTNAME
 		CONFIG_BOOTP_NISDOMAIN
+		CONFIG_BOOTP_BOOTPATH
 		CONFIG_BOOTP_BOOTFILESIZE
+		CONFIG_BOOTP_DNS
+		CONFIG_BOOTP_DNS2
 		CONFIG_BOOTP_SEND_HOSTNAME
 		CONFIG_BOOTP_NTPSERVER
 		CONFIG_BOOTP_TIMEOFFSET
@@ -1458,6 +1631,15 @@ The following options need to be configured:
 		instead of starting over.  This can be used to fail over
 		to Link-local IP address configuration if the DHCP server
 		is not available.
+
+		CONFIG_BOOTP_DNS2 - If a DHCP client requests the DNS
+		serverip from a DHCP server, it is possible that more
+		than one DNS serverip is offered to the client.
+		If CONFIG_BOOTP_DNS2 is enabled, the secondary DNS
+		serverip will be stored in the additional environment
+		variable "dnsip2". The first DNS serverip is always
+		stored in the variable "dnsip", when CONFIG_BOOTP_DNS
+		is defined.
 
 		CONFIG_BOOTP_SEND_HOSTNAME - Some DHCP servers are capable
 		to do a dynamic update of a DNS server. To do this, they
@@ -1670,6 +1852,11 @@ The following options need to be configured:
 		  - CONFIG_SYS_OMAP24_I2C_SLAVE3 slave addr channel 3
 		  - CONFIG_SYS_OMAP24_I2C_SPEED4 speed channel 4
 		  - CONFIG_SYS_OMAP24_I2C_SLAVE4 slave addr channel 4
+
+		- drivers/i2c/zynq_i2c.c
+		  - activate this driver with CONFIG_SYS_I2C_ZYNQ
+		  - set CONFIG_SYS_I2C_ZYNQ_SPEED for speed setting
+		  - set CONFIG_SYS_I2C_ZYNQ_SLAVE for slave addr
 
 		- drivers/i2c/s3c24x0_i2c.c:
 		  - activate this driver with CONFIG_SYS_I2C_S3C24X0
@@ -1890,6 +2077,19 @@ The following options need to be configured:
 		SPI configuration items (port pins to use, etc). For
 		an example, see include/configs/sacsng.h.
 
+		CONFIG_HARD_SPI
+
+		Enables a hardware SPI driver for general-purpose reads
+		and writes.  As with CONFIG_SOFT_SPI, the board configuration
+		must define a list of chip-select function pointers.
+		Currently supported on some MPC8xxx processors.	 For an
+		example, see include/configs/mpc8349emds.h.
+
+		CONFIG_MXC_SPI
+
+		Enables the driver for the SPI controllers on i.MX and MXC
+		SoCs. Currently i.MX31/35/51 are supported.
+
 		CONFIG_SYS_SPI_MXC_WAIT
 		Timeout for waiting until spi transfer completed.
 		default: (CONFIG_SYS_HZ/100)     /* 10 ms */
@@ -1956,6 +2156,13 @@ The following options need to be configured:
 		200 ms.
 
 - Configuration Management:
+		CONFIG_BUILD_TARGET
+
+		Some SoCs need special image types (e.g. U-Boot binary
+		with a special header) as build targets. By defining
+		CONFIG_BUILD_TARGET in the SoC / board header, this
+		special image will be automatically built upon calling
+		make / buildman.
 
 		CONFIG_IDENT_STRING
 
@@ -2051,6 +2258,10 @@ The following options need to be configured:
 		#define CONFIG_NFS_TIMEOUT 10000UL
 
 - Command Interpreter:
+		CONFIG_AUTO_COMPLETE
+
+		Enable auto completion of commands using TAB.
+
 		CONFIG_SYS_PROMPT_HUSH_PS2
 
 		This defines the secondary prompt string, which is
@@ -2079,6 +2290,12 @@ The following options need to be configured:
 		symbols.
 
 - Command Line Editing and History:
+		CONFIG_CMDLINE_EDITING
+
+		Enable editing and History functions for interactive
+		command line input operations
+
+- Command Line PS1/PS2 support:
 		CONFIG_CMDLINE_PS_SUPPORT
 
 		Enable support for changing the command prompt string
@@ -2112,6 +2329,26 @@ The following options need to be configured:
 		the environment like the "source" command or the
 		boot command first.
 
+		CONFIG_ENV_VARS_UBOOT_CONFIG
+
+		Define this in order to add variables describing the
+		U-Boot build configuration to the default environment.
+		These will be named arch, cpu, board, vendor, and soc.
+
+		Enabling this option will cause the following to be defined:
+
+		- CONFIG_SYS_ARCH
+		- CONFIG_SYS_CPU
+		- CONFIG_SYS_BOARD
+		- CONFIG_SYS_VENDOR
+		- CONFIG_SYS_SOC
+
+		CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
+
+		Define this in order to add variables describing certain
+		run-time determined information about the hardware to the
+		environment.  These will be named board_name, board_rev.
+
 		CONFIG_DELAY_ENVIRONMENT
 
 		Normally the environment is loaded when the board is
@@ -2141,6 +2378,210 @@ The following options need to be configured:
 		A better solution is to properly configure the firewall,
 		but sometimes that is not allowed.
 
+- bootcount support:
+		CONFIG_BOOTCOUNT_LIMIT
+
+		This enables the bootcounter support, see:
+		http://www.denx.de/wiki/DULG/UBootBootCountLimit
+
+		CONFIG_AT91SAM9XE
+		enable special bootcounter support on at91sam9xe based boards.
+		CONFIG_SOC_DA8XX
+		enable special bootcounter support on da850 based boards.
+		CONFIG_BOOTCOUNT_RAM
+		enable support for the bootcounter in RAM
+		CONFIG_BOOTCOUNT_I2C
+		enable support for the bootcounter on an i2c (like RTC) device.
+			CONFIG_SYS_I2C_RTC_ADDR = i2c chip address
+			CONFIG_SYS_BOOTCOUNT_ADDR = i2c addr which is used for
+						    the bootcounter.
+			CONFIG_BOOTCOUNT_ALEN = address len
+		CONFIG_BOOTCOUNT_EXT
+		enable support for the bootcounter in EXT filesystem
+			CONFIG_SYS_BOOTCOUNT_ADDR = RAM address used for read
+                                                    and write.
+			CONFIG_SYS_BOOTCOUNT_EXT_INTERFACE = interface
+			CONFIG_SYS_BOOTCOUNT_EXT_DEVPART = device and part
+			CONFIG_SYS_BOOTCOUNT_EXT_NAME = filename
+
+- Show boot progress:
+		CONFIG_SHOW_BOOT_PROGRESS
+
+		Defining this option allows to add some board-
+		specific code (calling a user-provided function
+		"show_boot_progress(int)") that enables you to show
+		the system's boot progress on some display (for
+		example, some LED's) on your board. At the moment,
+		the following checkpoints are implemented:
+
+
+Legacy uImage format:
+
+  Arg	Where			When
+    1	common/cmd_bootm.c	before attempting to boot an image
+   -1	common/cmd_bootm.c	Image header has bad	 magic number
+    2	common/cmd_bootm.c	Image header has correct magic number
+   -2	common/cmd_bootm.c	Image header has bad	 checksum
+    3	common/cmd_bootm.c	Image header has correct checksum
+   -3	common/cmd_bootm.c	Image data   has bad	 checksum
+    4	common/cmd_bootm.c	Image data   has correct checksum
+   -4	common/cmd_bootm.c	Image is for unsupported architecture
+    5	common/cmd_bootm.c	Architecture check OK
+   -5	common/cmd_bootm.c	Wrong Image Type (not kernel, multi)
+    6	common/cmd_bootm.c	Image Type check OK
+   -6	common/cmd_bootm.c	gunzip uncompression error
+   -7	common/cmd_bootm.c	Unimplemented compression type
+    7	common/cmd_bootm.c	Uncompression OK
+    8	common/cmd_bootm.c	No uncompress/copy overwrite error
+   -9	common/cmd_bootm.c	Unsupported OS (not Linux, BSD, VxWorks, QNX)
+
+    9	common/image.c		Start initial ramdisk verification
+  -10	common/image.c		Ramdisk header has bad	   magic number
+  -11	common/image.c		Ramdisk header has bad	   checksum
+   10	common/image.c		Ramdisk header is OK
+  -12	common/image.c		Ramdisk data   has bad	   checksum
+   11	common/image.c		Ramdisk data   has correct checksum
+   12	common/image.c		Ramdisk verification complete, start loading
+  -13	common/image.c		Wrong Image Type (not PPC Linux ramdisk)
+   13	common/image.c		Start multifile image verification
+   14	common/image.c		No initial ramdisk, no multifile, continue.
+
+   15	arch/<arch>/lib/bootm.c All preparation done, transferring control to OS
+
+  -30	arch/powerpc/lib/board.c	Fatal error, hang the system
+  -31	post/post.c		POST test failed, detected by post_output_backlog()
+  -32	post/post.c		POST test failed, detected by post_run_single()
+
+   34	common/cmd_doc.c	before loading a Image from a DOC device
+  -35	common/cmd_doc.c	Bad usage of "doc" command
+   35	common/cmd_doc.c	correct usage of "doc" command
+  -36	common/cmd_doc.c	No boot device
+   36	common/cmd_doc.c	correct boot device
+  -37	common/cmd_doc.c	Unknown Chip ID on boot device
+   37	common/cmd_doc.c	correct chip ID found, device available
+  -38	common/cmd_doc.c	Read Error on boot device
+   38	common/cmd_doc.c	reading Image header from DOC device OK
+  -39	common/cmd_doc.c	Image header has bad magic number
+   39	common/cmd_doc.c	Image header has correct magic number
+  -40	common/cmd_doc.c	Error reading Image from DOC device
+   40	common/cmd_doc.c	Image header has correct magic number
+   41	common/cmd_ide.c	before loading a Image from a IDE device
+  -42	common/cmd_ide.c	Bad usage of "ide" command
+   42	common/cmd_ide.c	correct usage of "ide" command
+  -43	common/cmd_ide.c	No boot device
+   43	common/cmd_ide.c	boot device found
+  -44	common/cmd_ide.c	Device not available
+   44	common/cmd_ide.c	Device available
+  -45	common/cmd_ide.c	wrong partition selected
+   45	common/cmd_ide.c	partition selected
+  -46	common/cmd_ide.c	Unknown partition table
+   46	common/cmd_ide.c	valid partition table found
+  -47	common/cmd_ide.c	Invalid partition type
+   47	common/cmd_ide.c	correct partition type
+  -48	common/cmd_ide.c	Error reading Image Header on boot device
+   48	common/cmd_ide.c	reading Image Header from IDE device OK
+  -49	common/cmd_ide.c	Image header has bad magic number
+   49	common/cmd_ide.c	Image header has correct magic number
+  -50	common/cmd_ide.c	Image header has bad	 checksum
+   50	common/cmd_ide.c	Image header has correct checksum
+  -51	common/cmd_ide.c	Error reading Image from IDE device
+   51	common/cmd_ide.c	reading Image from IDE device OK
+   52	common/cmd_nand.c	before loading a Image from a NAND device
+  -53	common/cmd_nand.c	Bad usage of "nand" command
+   53	common/cmd_nand.c	correct usage of "nand" command
+  -54	common/cmd_nand.c	No boot device
+   54	common/cmd_nand.c	boot device found
+  -55	common/cmd_nand.c	Unknown Chip ID on boot device
+   55	common/cmd_nand.c	correct chip ID found, device available
+  -56	common/cmd_nand.c	Error reading Image Header on boot device
+   56	common/cmd_nand.c	reading Image Header from NAND device OK
+  -57	common/cmd_nand.c	Image header has bad magic number
+   57	common/cmd_nand.c	Image header has correct magic number
+  -58	common/cmd_nand.c	Error reading Image from NAND device
+   58	common/cmd_nand.c	reading Image from NAND device OK
+
+  -60	common/env_common.c	Environment has a bad CRC, using default
+
+   64	net/eth.c		starting with Ethernet configuration.
+  -64	net/eth.c		no Ethernet found.
+   65	net/eth.c		Ethernet found.
+
+  -80	common/cmd_net.c	usage wrong
+   80	common/cmd_net.c	before calling net_loop()
+  -81	common/cmd_net.c	some error in net_loop() occurred
+   81	common/cmd_net.c	net_loop() back without error
+  -82	common/cmd_net.c	size == 0 (File with size 0 loaded)
+   82	common/cmd_net.c	trying automatic boot
+   83	common/cmd_net.c	running "source" command
+  -83	common/cmd_net.c	some error in automatic boot or "source" command
+   84	common/cmd_net.c	end without errors
+
+FIT uImage format:
+
+  Arg	Where			When
+  100	common/cmd_bootm.c	Kernel FIT Image has correct format
+ -100	common/cmd_bootm.c	Kernel FIT Image has incorrect format
+  101	common/cmd_bootm.c	No Kernel subimage unit name, using configuration
+ -101	common/cmd_bootm.c	Can't get configuration for kernel subimage
+  102	common/cmd_bootm.c	Kernel unit name specified
+ -103	common/cmd_bootm.c	Can't get kernel subimage node offset
+  103	common/cmd_bootm.c	Found configuration node
+  104	common/cmd_bootm.c	Got kernel subimage node offset
+ -104	common/cmd_bootm.c	Kernel subimage hash verification failed
+  105	common/cmd_bootm.c	Kernel subimage hash verification OK
+ -105	common/cmd_bootm.c	Kernel subimage is for unsupported architecture
+  106	common/cmd_bootm.c	Architecture check OK
+ -106	common/cmd_bootm.c	Kernel subimage has wrong type
+  107	common/cmd_bootm.c	Kernel subimage type OK
+ -107	common/cmd_bootm.c	Can't get kernel subimage data/size
+  108	common/cmd_bootm.c	Got kernel subimage data/size
+ -108	common/cmd_bootm.c	Wrong image type (not legacy, FIT)
+ -109	common/cmd_bootm.c	Can't get kernel subimage type
+ -110	common/cmd_bootm.c	Can't get kernel subimage comp
+ -111	common/cmd_bootm.c	Can't get kernel subimage os
+ -112	common/cmd_bootm.c	Can't get kernel subimage load address
+ -113	common/cmd_bootm.c	Image uncompress/copy overwrite error
+
+  120	common/image.c		Start initial ramdisk verification
+ -120	common/image.c		Ramdisk FIT image has incorrect format
+  121	common/image.c		Ramdisk FIT image has correct format
+  122	common/image.c		No ramdisk subimage unit name, using configuration
+ -122	common/image.c		Can't get configuration for ramdisk subimage
+  123	common/image.c		Ramdisk unit name specified
+ -124	common/image.c		Can't get ramdisk subimage node offset
+  125	common/image.c		Got ramdisk subimage node offset
+ -125	common/image.c		Ramdisk subimage hash verification failed
+  126	common/image.c		Ramdisk subimage hash verification OK
+ -126	common/image.c		Ramdisk subimage for unsupported architecture
+  127	common/image.c		Architecture check OK
+ -127	common/image.c		Can't get ramdisk subimage data/size
+  128	common/image.c		Got ramdisk subimage data/size
+  129	common/image.c		Can't get ramdisk load address
+ -129	common/image.c		Got ramdisk load address
+
+ -130	common/cmd_doc.c	Incorrect FIT image format
+  131	common/cmd_doc.c	FIT image format OK
+
+ -140	common/cmd_ide.c	Incorrect FIT image format
+  141	common/cmd_ide.c	FIT image format OK
+
+ -150	common/cmd_nand.c	Incorrect FIT image format
+  151	common/cmd_nand.c	FIT image format OK
+
+- legacy image format:
+		CONFIG_IMAGE_FORMAT_LEGACY
+		enables the legacy image format support in U-Boot.
+
+		Default:
+		enabled if CONFIG_FIT_SIGNATURE is not defined.
+
+		CONFIG_DISABLE_IMAGE_LEGACY
+		disable the legacy image format
+
+		This define is introduced, as the legacy image format is
+		enabled per default for backward compatibility.
+
+- Standalone program support:
 		CONFIG_STANDALONE_LOAD_ADDR
 
 		This option defines a board specific value for the
@@ -2232,6 +2673,12 @@ The following options need to be configured:
 		Enable UBI fastmap debug
 		default: 0
 
+- UBIFS support
+		CONFIG_UBIFS_SILENCE_MSG
+
+		Make the verbose messages from UBIFS stop printing.  This leaves
+		warnings and errors enabled.
+
 - SPL framework
 		CONFIG_SPL
 		Enable building of SPL globally.
@@ -2251,6 +2698,9 @@ The following options need to be configured:
 		linker lists sections), BSS excluded.
 		When defined, the linker checks that the actual size does
 		not exceed it.
+
+		CONFIG_SPL_TEXT_BASE
+		TEXT_BASE for linking the SPL binary.
 
 		CONFIG_SPL_RELOC_TEXT_BASE
 		Address to relocate to.  If unspecified, this is equal to
@@ -2292,6 +2742,11 @@ The following options need to be configured:
 
 		CONFIG_SYS_SPL_MALLOC_SIZE
 		The size of the malloc pool used in SPL.
+
+		CONFIG_SPL_FRAMEWORK
+		Enable the SPL framework under common/.  This framework
+		supports MMC, NAND and YMODEM loading of U-Boot and NAND
+		NAND loading of the Linux Kernel.
 
 		CONFIG_SPL_OS_BOOT
 		Enable booting directly to an OS from SPL.
@@ -2380,6 +2835,9 @@ The following options need to be configured:
 		Defines the size and behavior of the NAND that SPL uses
 		to read U-Boot
 
+		CONFIG_SPL_NAND_BOOT
+		Add support NAND boot
+
 		CONFIG_SYS_NAND_U_BOOT_OFFS
 		Location in NAND to read U-Boot from
 
@@ -2411,7 +2869,7 @@ The following options need to be configured:
 		use an arch-specific makefile fragment instead, for
 		example if more than one image needs to be produced.
 
-		CONFIG_SPL_FIT_PRINT
+		CONFIG_FIT_SPL_PRINT
 		Printing information about a FIT image adds quite a bit of
 		code to SPL. So this is normally disabled in SPL. Use this
 		option to re-enable it. This will affect the output of the
@@ -2488,6 +2946,9 @@ Configuration Settings:
 - CONFIG_SYS_MEMTEST_START, CONFIG_SYS_MEMTEST_END:
 		Begin and End addresses of the area used by the
 		simple memory test.
+
+- CONFIG_SYS_ALT_MEMTEST:
+		Enable an alternate, more extensive memory test.
 
 - CONFIG_SYS_MEMTEST_SCRATCH:
 		Scratch address used by the alternate memory test
@@ -2752,6 +3213,11 @@ Configuration Settings:
 - CONFIG_ENV_ACCESS_IGNORE_FORCE
 	If defined, don't allow the -f switch to env set override variable
 	access flags.
+
+- CONFIG_USE_STDINT
+	If stdint.h is available with your toolchain you can define this
+	option to enable it. You can provide option 'USE_STDINT=1' when
+	building U-Boot to enable this.
 
 The following definitions that deal with the placement and management
 of environment data (variable area); in general, we support the
@@ -3066,7 +3532,7 @@ Low Level (hardware related) configuration options:
 		globally (CONFIG_CMD_MEMORY).
 
 - CONFIG_SKIP_LOWLEVEL_INIT
-		[ARM, NDS32, MIPS, RISC-V only] If this variable is defined, then certain
+		[ARM, NDS32, MIPS only] If this variable is defined, then certain
 		low level initializations (like setting up the memory
 		controller) are omitted and/or U-Boot does not
 		relocate itself into RAM.
@@ -3109,6 +3575,9 @@ Low Level (hardware related) configuration options:
 		If defined, the x86 reset vector code is included. This is not
 		needed when U-Boot is running from Coreboot.
 
+- CONFIG_SPL_AM33XX_ENABLE_RTC32K_OSC:
+		Enables the RTC32K OSC on AM33xx based plattforms
+
 - CONFIG_SYS_NAND_NO_SUBPAGE_WRITE
 		Option to disable subpage write in NAND driver
 		driver that uses this:
@@ -3125,12 +3594,12 @@ within that device.
 
 - CONFIG_SYS_FMAN_FW_ADDR
 	The address in the storage device where the FMAN microcode is located.  The
-	meaning of this address depends on which CONFIG_SYS_QE_FMAN_FW_IN_xxx macro
+	meaning of this address depends on which CONFIG_SYS_QE_FW_IN_xxx macro
 	is also specified.
 
 - CONFIG_SYS_QE_FW_ADDR
 	The address in the storage device where the QE microcode is located.  The
-	meaning of this address depends on which CONFIG_SYS_QE_FMAN_FW_IN_xxx macro
+	meaning of this address depends on which CONFIG_SYS_QE_FW_IN_xxx macro
 	is also specified.
 
 - CONFIG_SYS_QE_FMAN_FW_LENGTH
@@ -3271,11 +3740,6 @@ this behavior and build U-Boot to some external directory:
 Note that the command line "O=" setting overrides the KBUILD_OUTPUT environment
 variable.
 
-User specific CPPFLAGS, AFLAGS and CFLAGS can be passed to the compiler by
-setting the according environment variables KCPPFLAGS, KAFLAGS and KCFLAGS.
-For example to treat all compiler warnings as errors:
-
-	make KCFLAGS=-Werror
 
 Please be aware that the Makefiles assume you are using GNU make, so
 for instance on NetBSD you might need to use "gmake" instead of
@@ -3427,8 +3891,6 @@ List of environment variables (most likely not complete):
 		  a hexadecimal number and defines the size of the region
 		  allowed for use by the bootm command. See also "bootm_low"
 		  environment variable.
-
-  bootstopkeysha256, bootdelaykey, bootstopkey	- See README.autoboot
 
   updatefile	- Location of the software update file on a TFTP server, used
 		  by the automatic software update feature. Please refer to
@@ -3675,17 +4137,6 @@ If CONFIG_REGEX is defined, the variable_name above is evaluated as a
 regular expression. This allows multiple variables to be connected to
 the same callback without explicitly listing them all out.
 
-The signature of the callback functions is:
-
-    int callback(const char *name, const char *value, enum env_op op, int flags)
-
-* name - changed environment variable
-* value - new value of the environment variable
-* op - operation (create, overwrite, or delete)
-* flags - attributes of the environment variable change, see flags H_* in
-  include/search.h
-
-The return value is 0 if the variable change is accepted and 1 otherwise.
 
 Command Line Parsing:
 =====================
@@ -4534,22 +4985,6 @@ On NDS32, the following registers are used:
 
 NOTE: DECLARE_GLOBAL_DATA_PTR must be used with file-global scope,
 or current versions of GCC may "optimize" the code too much.
-
-On RISC-V, the following registers are used:
-
-	x0: hard-wired zero (zero)
-	x1: return address (ra)
-	x2:	stack pointer (sp)
-	x3:	global pointer (gp)
-	x4:	thread pointer (tp)
-	x5:	link register (t0)
-	x8:	frame pointer (fp)
-	x10-x11:	arguments/return values (a0-1)
-	x12-x17:	arguments (a2-7)
-	x28-31:	 temporaries (t3-6)
-	pc:	program counter (pc)
-
-    ==> U-Boot will use gp to hold a pointer to the global data
 
 Memory Management:
 ------------------

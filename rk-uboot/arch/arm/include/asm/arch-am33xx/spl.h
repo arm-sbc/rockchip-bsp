@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2012
  * Texas Instruments, <www.ti.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef	_ASM_ARCH_SPL_H_
 #define	_ASM_ARCH_SPL_H_
@@ -62,7 +63,7 @@
 #define BOOT_DEVICE_CPGMAC	0x47
 
 #define MMC_BOOT_DEVICES_START	BOOT_DEVICE_MMC1
-#ifdef CONFIG_SPL_USB_STORAGE
+#ifdef CONFIG_SPL_USB_SUPPORT
 #define MMC_BOOT_DEVICES_END	BOOT_DEVICE_USB
 #else
 #define MMC_BOOT_DEVICES_END	BOOT_DEVICE_MMC2

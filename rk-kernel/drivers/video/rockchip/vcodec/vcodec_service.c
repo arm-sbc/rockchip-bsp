@@ -43,7 +43,6 @@
 #include <linux/pm_opp.h>
 #include <linux/pm_runtime.h>
 #include <linux/iopoll.h>
-#include <linux/nospec.h>
 
 #include <linux/regulator/consumer.h>
 #include <linux/rockchip/grf.h>
@@ -1455,8 +1454,6 @@ static struct vpu_reg *reg_init(struct vpu_subdev_data *data,
 		extra_size = size - data->reg_size;
 		size = data->reg_size;
 	}
-	session->type = array_index_nospec(session->type, VPU_TYPE_BUTT);
-
 	reg->session = session;
 	reg->data = data;
 	reg->type = session->type;
@@ -3024,6 +3021,8 @@ static int vcodec_subdev_probe(struct platform_device *pdev,
 						       list_session);
 	const char *name  = np->name;
 	char mmu_dev_dts_name[40];
+	dma_addr_t iova = -1;
+	unsigned long size = 0;
 
 	dev_info(dev, "probe device");
 
@@ -3135,8 +3134,8 @@ static int vcodec_subdev_probe(struct platform_device *pdev,
 	}
 
 	vcodec_iommu_map_iommu(data->iommu_info, session,
-			       data->pa_hdl, NULL, NULL);
-	data->pa_iova = (unsigned long)-1;
+			       data->pa_hdl, &iova, &size);
+	data->pa_iova = iova;
 	vcodec_exit_mode(data);
 
 	hw_info = data->hw_info;

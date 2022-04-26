@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -55,20 +56,34 @@ int misc_call(struct udevice *dev, int msgid, void *tx_msg, int tx_size,
 	return ops->call(dev, msgid, tx_msg, tx_size, rx_msg, rx_size);
 }
 
-int misc_set_enabled(struct udevice *dev, bool val)
+struct udevice *misc_get_device_by_capability(u32 capability)
 {
-	const struct misc_ops *ops = device_get_ops(dev);
+	const struct misc_ops *ops;
+	struct udevice *dev;
+	struct uclass *uc;
+	int ret;
+	u32 cap;
 
-	if (!ops->set_enabled)
-		return -ENOSYS;
+	ret = uclass_get(UCLASS_MISC, &uc);
+	if (ret)
+		return NULL;
 
-	return ops->set_enabled(dev, val);
+	for (uclass_first_device(UCLASS_MISC, &dev);
+	     dev;
+	     uclass_next_device(&dev)) {
+		ops = device_get_ops(dev);
+		if (!ops || !ops->ioctl)
+			continue;
+
+		ret = ops->ioctl(dev, IOCTL_REQ_CAPABILITY, &cap);
+		if (!ret && ((cap & capability) == capability))
+			return dev;
+	}
+
+	return NULL;
 }
 
 UCLASS_DRIVER(misc) = {
 	.id		= UCLASS_MISC,
 	.name		= "misc",
-#if CONFIG_IS_ENABLED(OF_CONTROL) && !CONFIG_IS_ENABLED(OF_PLATDATA)
-	.post_bind	= dm_scan_fdt_dev,
-#endif
 };

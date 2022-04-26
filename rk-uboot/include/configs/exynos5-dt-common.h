@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014 Google, Inc
  *
  * Configuration settings for generic Exynos 5 board
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_EXYNOS5_DT_COMMON_H
@@ -17,7 +18,7 @@
 
 #define CONFIG_EXYNOS5_DT
 
-#define CONFIG_SYS_SPI_BASE	0x12D30000
+#define CONFIG_ENV_SPI_BASE	0x12D30000
 #define FLASH_SIZE		(4 << 20)
 #define CONFIG_ENV_OFFSET	(FLASH_SIZE - CONFIG_ENV_SECT_SIZE)
 #define CONFIG_SPI_BOOTING

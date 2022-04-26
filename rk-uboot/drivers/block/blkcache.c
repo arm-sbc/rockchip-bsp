@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) Nelson Integration, LLC 2016
  * Author: Eric Nelson<eric@nelint.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  */
 #include <config.h>
@@ -24,7 +25,7 @@ struct block_cache_node {
 static LIST_HEAD(block_cache);
 
 static struct block_cache_stats _stats = {
-	.max_blocks_per_entry = 8,
+	.max_blocks_per_entry = 2,
 	.max_entries = 32
 };
 

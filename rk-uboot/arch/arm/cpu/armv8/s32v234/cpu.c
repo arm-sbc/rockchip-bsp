@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014-2016, Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,12 +12,14 @@
 #include <asm/arch/mc_me_regs.h>
 #include "cpu.h"
 
+DECLARE_GLOBAL_DATA_PTR;
+
 u32 cpu_mask(void)
 {
 	return readl(MC_ME_CS);
 }
 
-#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
+#ifndef CONFIG_SYS_DCACHE_OFF
 
 #define S32V234_IRAM_BASE        0x3e800000UL
 #define S32V234_IRAM_SIZE        0x800000UL

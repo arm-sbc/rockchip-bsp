@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) Stefano Babic <sbabic@denx.de>
  *
  * Based on other i.MX6 boards
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/iomux.h>
 #include <asm/arch/mx6-pins.h>
-#include <env.h>
 #include <linux/errno.h>
 #include <asm/gpio.h>
 #include <asm/mach-imx/mxc_i2c.h>
@@ -17,7 +17,7 @@
 #include <asm/mach-imx/boot_mode.h>
 #include <asm/mach-imx/video.h>
 #include <mmc.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <asm/arch/mxc_hdmi.h>
@@ -25,7 +25,6 @@
 #include <asm/io.h>
 #include <asm/arch/sys_proto.h>
 #include <i2c.h>
-#include <input.h>
 #include <power/pmic.h>
 #include <power/pfuze100_pmic.h>
 #include <asm/arch/mx6-ddr.h>
@@ -256,7 +255,7 @@ iomux_v3_cfg_t const usdhc4_pads[] = {
 	MX6_PAD_SD4_DAT7__SD4_DATA7 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 };
 
-#ifdef CONFIG_FSL_ESDHC_IMX
+#ifdef CONFIG_FSL_ESDHC
 struct fsl_esdhc_cfg usdhc_cfg[2] = {
 	{USDHC2_BASE_ADDR},
 	{USDHC4_BASE_ADDR},

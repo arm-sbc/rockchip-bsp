@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007
  * Stelian Pop <stelian@popies.net>
  * Lead Tech Design <www.leadtechdesign.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef __ASM_ARM_DMA_MAPPING_H
 #define __ASM_ARM_DMA_MAPPING_H
@@ -13,7 +14,7 @@
 
 static inline void *dma_alloc_coherent(size_t len, unsigned long *handle)
 {
-	*handle = (unsigned long)memalign(ARCH_DMA_MINALIGN, ROUND(len, ARCH_DMA_MINALIGN));
+	*handle = (unsigned long)memalign(ARCH_DMA_MINALIGN, len);
 	return (void *)*handle;
 }
 

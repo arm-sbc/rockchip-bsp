@@ -18,7 +18,9 @@
 
 #include <asm/arch/omap.h>
 
+#define CONFIG_ENV_SIZE			(128 << 10)	/* 128 KiB */
 #define CONFIG_SYS_MALLOC_LEN		(1024 << 10)
+#define CONFIG_SYS_LONGHELP		/* undef to save memory */
 #define CONFIG_MACH_TYPE		MACH_TYPE_TI8148EVM
 
 #define CONFIG_CMDLINE_TAG		/* enable passing of ATAGs  */
@@ -27,6 +29,8 @@
 
 /* commands to include */
 
+#define CONFIG_ENV_VARS_UBOOT_CONFIG
+#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x80200000\0" \
 	"fdtaddr=0x80F80000\0" \
@@ -96,6 +100,7 @@
 /**
  * Physical Memory Map
  */
+#define CONFIG_NR_DRAM_BANKS		1		/* 1 banks of DRAM */
 #define PHYS_DRAM_1_SIZE		0x20000000	/* 512MB */
 #define CONFIG_MAX_RAM_BANK_SIZE	(1024 << 20)	/* 1024MB */
 
@@ -116,10 +121,14 @@
 #define CONFIG_SYS_NS16550_COM1		0x48020000	/* Base EVM has UART0 */
 
 /* CPU */
+#define CONFIG_ARCH_CPU_INIT
 
 #define CONFIG_ENV_OVERWRITE
+#define CONFIG_CONS_INDEX		1
 
 /* Defines for SPL */
+#define CONFIG_SPL_FRAMEWORK
+#define CONFIG_SPL_TEXT_BASE		0x40300000
 #define CONFIG_SPL_MAX_SIZE		(SRAM_SCRATCH_SPACE_ADDR - \
 					 CONFIG_SPL_TEXT_BASE)
 
@@ -129,6 +138,7 @@
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION     1
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME        "u-boot.img"
 
+#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
 #define CONFIG_SYS_SPI_U_BOOT_SIZE	0x40000
 
 /*
@@ -137,6 +147,7 @@
  * header. That is 0x800FFFC0--0x80800000 should not be used for any
  * other needs.
  */
+#define CONFIG_SYS_TEXT_BASE		0x80800000
 #define CONFIG_SYS_SPL_MALLOC_START	0x80208000
 #define CONFIG_SYS_SPL_MALLOC_SIZE	0x100000
 
@@ -149,8 +160,13 @@
 #endif
 
 /* Ethernet */
+#define CONFIG_DRIVER_TI_CPSW
+#define CONFIG_MII
+#define CONFIG_BOOTP_DNS
 #define CONFIG_BOOTP_DNS2
 #define CONFIG_BOOTP_SEND_HOSTNAME
+#define CONFIG_BOOTP_GATEWAY
+#define CONFIG_BOOTP_SUBNETMASK
 #define CONFIG_NET_RETRY_COUNT         10
 #define CONFIG_PHY_ET1011C
 #define CONFIG_PHY_ET1011C_TX_CLK_FIX

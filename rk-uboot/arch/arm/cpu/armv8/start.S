@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2013
  * David Feng <fenghua@phytium.com.cn>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm-offsets.h>
@@ -18,9 +19,7 @@
 
 .globl	_start
 _start:
-#if defined(CONFIG_LINUX_KERNEL_IMAGE_HEADER)
-#include <asm/boot0-linux-kernel-header.h>
-#elif defined(CONFIG_ENABLE_ARM_SOC_BOOT0_HOOK)
+#ifdef CONFIG_ENABLE_ARM_SOC_BOOT0_HOOK
 /*
  * Various SoCs need something special and SoC-specific up front in
  * order to boot, allow them to set that in their boot0.h file and then
@@ -31,11 +30,16 @@ _start:
 	b	reset
 #endif
 
+#if !CONFIG_IS_ENABLED(TINY_FRAMEWORK)
 	.align 3
 
 .globl	_TEXT_BASE
 _TEXT_BASE:
+#if defined(CONFIG_SPL_BUILD)
+	.quad   CONFIG_SPL_TEXT_BASE
+#else
 	.quad	CONFIG_SYS_TEXT_BASE
+#endif
 
 /*
  * These are defined in the linker script.
@@ -87,22 +91,13 @@ pie_fixup_done:
 #ifdef CONFIG_SYS_RESET_SCTRL
 	bl reset_sctrl
 #endif
-
-#if defined(CONFIG_ARMV8_SPL_EXCEPTION_VECTORS) || !defined(CONFIG_SPL_BUILD)
-.macro	set_vbar, regname, reg
-	msr	\regname, \reg
-.endm
-	adr	x0, vectors
-#else
-.macro	set_vbar, regname, reg
-.endm
-#endif
 	/*
 	 * Could be EL3/EL2/EL1, Initial State:
 	 * Little Endian, MMU Disabled, i/dCache Disabled
 	 */
+	adr	x0, vectors
 	switch_el x1, 3f, 2f, 1f
-3:	set_vbar vbar_el3, x0
+3:	msr	vbar_el3, x0
 	mrs	x0, scr_el3
 	orr	x0, x0, #0xf			/* SCR_EL3.NS|IRQ|FIQ|EA */
 	msr	scr_el3, x0
@@ -112,11 +107,11 @@ pie_fixup_done:
 	msr	cntfrq_el0, x0			/* Initialize CNTFRQ */
 #endif
 	b	0f
-2:	set_vbar	vbar_el2, x0
+2:	msr	vbar_el2, x0
 	mov	x0, #0x33ff
 	msr	cptr_el2, x0			/* Enable FP/SIMD */
 	b	0f
-1:	set_vbar	vbar_el1, x0
+1:	msr	vbar_el1, x0
 	mov	x0, #3 << 20
 	msr	cpacr_el1, x0			/* Enable FP/SIMD */
 0:
@@ -206,35 +201,13 @@ reset_sctrl:
 WEAK(apply_core_errata)
 
 	mov	x29, lr			/* Save LR */
-	/* For now, we support Cortex-A53, Cortex-A57 specific errata */
-
-	/* Check if we are running on a Cortex-A53 core */
-	branch_if_a53_core x0, apply_a53_core_errata
+	/* For now, we support Cortex-A57 specific errata only */
 
 	/* Check if we are running on a Cortex-A57 core */
 	branch_if_a57_core x0, apply_a57_core_errata
 0:
 	mov	lr, x29			/* Restore LR */
 	ret
-
-apply_a53_core_errata:
-
-#ifdef CONFIG_ARM_ERRATA_855873
-	mrs	x0, midr_el1
-	tst	x0, #(0xf << 20)
-	b.ne	0b
-
-	mrs	x0, midr_el1
-	and	x0, x0, #0xf
-	cmp	x0, #3
-	b.lt	0b
-
-	mrs	x0, S3_1_c15_c2_0	/* cpuactlr_el1 */
-	/* Enable data cache clean as data cache clean/invalidate */
-	orr	x0, x0, #1 << 44
-	msr	S3_1_c15_c2_0, x0	/* cpuactlr_el1 */
-#endif
-	b 0b
 
 apply_a57_core_errata:
 
@@ -289,7 +262,7 @@ ENDPROC(apply_core_errata)
 WEAK(lowlevel_init)
 	mov	x29, lr			/* Save LR */
 
-#if defined(CONFIG_GICV2) || defined(CONFIG_GICV3)
+#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_IRQ)
 	branch_if_slave x0, 1f
 	ldr	x0, =GICD_BASE
 	bl	gic_init_secure
@@ -303,6 +276,23 @@ WEAK(lowlevel_init)
 	bl	gic_init_secure_percpu
 #endif
 #endif
+
+#if !defined(CONFIG_SPL_BUILD) && defined(CONFIG_IRQ)
+	/*
+	 * Setting HCR_EL2.TGE AMO IMO FMO for exception rounting to EL2
+	 */
+	mrs	x0, CurrentEL		/* check currentEL */
+	cmp	x0, 0x8
+	b.ne	end			/* currentEL != EL2 */
+
+	mrs	x9, hcr_el2
+	orr	x9, x9, #(7 << 3)	/* HCR_EL2.AMO IMO FMO set */
+	orr	x9, x9, #(1 << 27)	/* HCR_EL2.TGE set */
+	msr	hcr_el2, x9
+
+end:
+	nop
+#endif /* CONFIG_IRQ */
 
 #ifdef CONFIG_ARMV8_MULTIENTRY
 	branch_if_master x0, x1, 2f
@@ -354,7 +344,6 @@ ENDPROC(smp_kick_all_cpus)
 /*-----------------------------------------------------------------------*/
 
 ENTRY(c_runtime_cpu_setup)
-#if defined(CONFIG_ARMV8_SPL_EXCEPTION_VECTORS) || !defined(CONFIG_SPL_BUILD)
 	/* Relocate vBAR */
 	adr	x0, vectors
 	switch_el x1, 3f, 2f, 1f
@@ -364,7 +353,6 @@ ENTRY(c_runtime_cpu_setup)
 	b	0f
 1:	msr	vbar_el1, x0
 0:
-#endif
 
 	ret
 ENDPROC(c_runtime_cpu_setup)
@@ -372,3 +360,4 @@ ENDPROC(c_runtime_cpu_setup)
 WEAK(save_boot_params)
 	b	save_boot_params_ret	/* back to my caller */
 ENDPROC(save_boot_params)
+#endif

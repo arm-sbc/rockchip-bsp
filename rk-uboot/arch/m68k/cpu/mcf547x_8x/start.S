@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2003	Josef Baumgartner <josef.baumgartner@telex.de>
  * Based on code from Bernhard Kuhn <bkuhn@metrowerks.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm-offsets.h>
@@ -131,8 +132,7 @@ _start:
 	 * then (and always) gd struct space will be reserved
 	 */
 	move.l	%sp, -(%sp)
-	move.l	#board_init_f_alloc_reserve, %a1
-	jsr	(%a1)
+	bsr	board_init_f_alloc_reserve
 
 	/* update stack and frame-pointers */
 	move.l  %d0, %sp
@@ -140,8 +140,7 @@ _start:
 
 	/* initialize reserved area */
 	move.l	%d0, -(%sp)
-	move.l	#board_init_f_init_reserve, %a1
-	jsr	(%a1)
+	bsr	board_init_f_init_reserve
 
 	/* run low-level CPU init code (from flash) */
 	jbsr	cpu_init_f

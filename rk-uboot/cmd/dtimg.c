@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2018 Linaro Ltd.
  * Sam Protsenko <semen.protsenko@linaro.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#include <env.h>
 #include <image-android-dt.h>
 #include <common.h>
 
@@ -117,7 +117,7 @@ static int do_dtimg(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (!cp || argc > cp->maxargs)
 		return CMD_RET_USAGE;
-	if (flag == CMD_FLAG_REPEAT && !cmd_is_repeatable(cp))
+	if (flag == CMD_FLAG_REPEAT && !cp->repeatable)
 		return CMD_RET_SUCCESS;
 
 	return cp->cmd(cmdtp, flag, argc, argv);

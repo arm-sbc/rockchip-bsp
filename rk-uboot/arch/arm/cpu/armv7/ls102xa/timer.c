@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -90,9 +91,14 @@ unsigned long long get_ticks(void)
 	return now;
 }
 
+unsigned long get_timer_masked(void)
+{
+	return tick_to_time(get_ticks());
+}
+
 unsigned long get_timer(ulong base)
 {
-	return tick_to_time(get_ticks()) - base;
+	return get_timer_masked() - base;
 }
 
 /* delay x useconds and preserve advance timstamp value */

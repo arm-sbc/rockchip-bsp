@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013
  * Heiko Schocher, DENX Software Engineering, hs@denx.de.
@@ -9,6 +8,8 @@
  *
  * Sergej Stepanov <ste@ids.de>
  * Based on board/freescale/mpc8313erdb/mpc8313erdb.c
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -57,7 +58,7 @@ int fixed_sdram(unsigned long config)
 	u32 msize_log2 = __ilog2(msize);
 
 	out_be32(&im->sysconf.ddrlaw[0].bar,
-		 (CONFIG_SYS_SDRAM_BASE & 0xfffff000));
+		 (CONFIG_SYS_DDR_SDRAM_BASE & 0xfffff000));
 	out_be32(&im->sysconf.ddrlaw[0].ar, LBLAWAR_EN | (msize_log2 - 1));
 	out_be32(&im->sysconf.ddrcdr, CONFIG_SYS_DDRCDR_VALUE);
 	sync();
@@ -96,7 +97,7 @@ int fixed_sdram(unsigned long config)
 	setbits_be32(&im->ddr.sdram_cfg, SDRAM_CFG_MEM_EN);
 	/* now check the real size */
 	disable_addr_trans();
-	msize = get_ram_size(CONFIG_SYS_SDRAM_BASE, msize);
+	msize = get_ram_size(CONFIG_SYS_DDR_BASE, msize);
 	enable_addr_trans();
 #endif
 	return msize;
@@ -129,8 +130,8 @@ int dram_init(void)
 
 	msize = setup_sdram();
 
-	out_be32(&lbc->lbcr, (0x00040000 | (0xFF << LBCR_BMT_SHIFT) | 0xF));
-	out_be32(&lbc->mrtpr, 0x20000000);
+	out_be32(&lbc->lbcr, CONFIG_SYS_LBC_LBCR);
+	out_be32(&lbc->mrtpr, CONFIG_SYS_LBC_MRTPR);
 	sync();
 
 	gd->ram_size = msize;
@@ -208,4 +209,4 @@ void spi_cs_deactivate(struct spi_slave *slave)
 	/* deactivate the spi_cs */
 	setbits_be32(&iopd->dat, IDSCPLD_SPI_CS_MASK);
 }
-#endif
+#endif /* CONFIG_HARD_SPI */

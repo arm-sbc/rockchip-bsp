@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -12,7 +13,7 @@
 #include <asm/io.h>
 #include <linux/sizes.h>
 #include <common.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <mmc.h>
 #include <miiphy.h>
 #include <netdev.h>
@@ -35,6 +36,9 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define LCD_PAD_CTRL    (PAD_CTL_HYS | PAD_CTL_PUS_PU100KOHM | \
 	PAD_CTL_DSE_3P3V_49OHM)
+
+#define QSPI_PAD_CTRL	\
+	(PAD_CTL_DSE_3P3V_49OHM | PAD_CTL_PUE | PAD_CTL_PUS_PU47KOHM)
 
 #define NAND_PAD_CTRL (PAD_CTL_DSE_3P3V_49OHM | PAD_CTL_SRE_SLOW | PAD_CTL_HYS)
 
@@ -256,7 +260,7 @@ static int setup_fec(void)
 		(IOMUXC_GPR_GPR1_GPR_ENET1_TX_CLK_SEL_MASK |
 		 IOMUXC_GPR_GPR1_GPR_ENET1_CLK_DIR_MASK), 0);
 
-	return set_clk_enet(ENET_125MHZ);
+	return set_clk_enet(ENET_125MHz);
 }
 
 
@@ -275,8 +279,21 @@ int board_phy_config(struct phy_device *phydev)
 #endif
 
 #ifdef CONFIG_FSL_QSPI
+static iomux_v3_cfg_t const quadspi_pads[] = {
+	MX7D_PAD_EPDC_DATA00__QSPI_A_DATA0 | MUX_PAD_CTRL(QSPI_PAD_CTRL),
+	MX7D_PAD_EPDC_DATA01__QSPI_A_DATA1 | MUX_PAD_CTRL(QSPI_PAD_CTRL),
+	MX7D_PAD_EPDC_DATA02__QSPI_A_DATA2 | MUX_PAD_CTRL(QSPI_PAD_CTRL),
+	MX7D_PAD_EPDC_DATA03__QSPI_A_DATA3 | MUX_PAD_CTRL(QSPI_PAD_CTRL),
+	MX7D_PAD_EPDC_DATA05__QSPI_A_SCLK  | MUX_PAD_CTRL(QSPI_PAD_CTRL),
+	MX7D_PAD_EPDC_DATA06__QSPI_A_SS0_B | MUX_PAD_CTRL(QSPI_PAD_CTRL),
+};
+
 int board_qspi_init(void)
 {
+	/* Set the iomux */
+	imx_iomux_v3_setup_multiple_pads(quadspi_pads,
+					 ARRAY_SIZE(quadspi_pads));
+
 	/* Set the clock */
 	set_clk_qspi();
 

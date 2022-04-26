@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2013 Google, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __DM_TEST_H
@@ -69,7 +70,6 @@ struct dm_test_priv {
 	int op_count[DM_TEST_OP_COUNT];
 	int uclass_flag;
 	int uclass_total;
-	int uclass_postp;
 };
 
 /**

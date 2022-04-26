@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Device manager
  *
@@ -6,6 +5,8 @@
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -16,9 +17,17 @@
 #include <dm/uclass.h>
 #include <dm/uclass-internal.h>
 #include <dm/util.h>
-#include <power-domain.h>
 
-int device_chld_unbind(struct udevice *dev, struct driver *drv)
+/**
+ * device_chld_unbind() - Unbind all device's children from the device
+ *
+ * On error, the function continues to unbind all children, and reports the
+ * first error.
+ *
+ * @dev:	The device that is to be stripped of its children
+ * @return 0 on success, -ve on error
+ */
+static int device_chld_unbind(struct udevice *dev)
 {
 	struct udevice *pos, *n;
 	int ret, saved_ret = 0;
@@ -26,9 +35,6 @@ int device_chld_unbind(struct udevice *dev, struct driver *drv)
 	assert(dev);
 
 	list_for_each_entry_safe(pos, n, &dev->child_head, sibling_node) {
-		if (drv && (pos->driver != drv))
-			continue;
-
 		ret = device_unbind(pos);
 		if (ret && !saved_ret)
 			saved_ret = ret;
@@ -37,8 +43,13 @@ int device_chld_unbind(struct udevice *dev, struct driver *drv)
 	return saved_ret;
 }
 
-int device_chld_remove(struct udevice *dev, struct driver *drv,
-		       uint flags)
+/**
+ * device_chld_remove() - Stop all device's children
+ * @dev:	The device whose children are to be removed
+ * @pre_os_remove: Flag, if this functions is called in the pre-OS stage
+ * @return 0 on success, -ve on error
+ */
+static int device_chld_remove(struct udevice *dev, uint flags)
 {
 	struct udevice *pos, *n;
 	int ret;
@@ -46,9 +57,6 @@ int device_chld_remove(struct udevice *dev, struct driver *drv,
 	assert(dev);
 
 	list_for_each_entry_safe(pos, n, &dev->child_head, sibling_node) {
-		if (drv && (pos->driver != drv))
-			continue;
-
 		ret = device_remove(pos, flags);
 		if (ret)
 			return ret;
@@ -80,7 +88,7 @@ int device_unbind(struct udevice *dev)
 			return ret;
 	}
 
-	ret = device_chld_unbind(dev, NULL);
+	ret = device_chld_unbind(dev);
 	if (ret)
 		return ret;
 
@@ -171,7 +179,7 @@ int device_remove(struct udevice *dev, uint flags)
 	if (ret)
 		return ret;
 
-	ret = device_chld_remove(dev, NULL, flags);
+	ret = device_chld_remove(dev, flags);
 	if (ret)
 		goto err;
 
@@ -192,10 +200,6 @@ int device_remove(struct udevice *dev, uint flags)
 				__func__, dev->name);
 		}
 	}
-
-	if (!(drv->flags & DM_FLAG_DEFAULT_PD_CTRL_OFF) &&
-	    (dev != gd->cur_serial_dev))
-		dev_power_domain_off(dev);
 
 	if (flags_remove(flags, drv->flags)) {
 		device_free(dev);

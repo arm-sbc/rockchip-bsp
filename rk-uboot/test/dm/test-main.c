@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -64,7 +65,7 @@ static int dm_test_destroy(struct unit_test_state *uts)
 
 		/*
 		 * If the uclass doesn't exist we don't want to create it. So
-		 * check that here before we call uclass_find_device().
+		 * check that here before we call uclass_find_device()/
 		 */
 		uc = uclass_find(id);
 		if (!uc)
@@ -94,7 +95,7 @@ static int dm_do_test(struct unit_test_state *uts, struct unit_test *test,
 		ut_assertok(dm_extended_scan_fdt(gd->fdt_blob, false));
 
 	/*
-	 * Silence the console and rely on console recording to get
+	 * Silence the console and rely on console reocrding to get
 	 * our output.
 	 */
 	console_record_reset();
@@ -130,7 +131,7 @@ static int dm_test_main(const char *test_name)
 	const int n_ents = ll_entry_count(struct unit_test, dm_test);
 	struct unit_test_state *uts = &global_dm_test_state;
 	struct unit_test *test;
-	int found;
+	int run_count;
 
 	uts->priv = &_global_priv_dm_test_state;
 	uts->fail_count = 0;
@@ -148,7 +149,7 @@ static int dm_test_main(const char *test_name)
 	if (!test_name)
 		printf("Running %d driver model tests\n", n_ents);
 
-	found = 0;
+	run_count = 0;
 #ifdef CONFIG_OF_LIVE
 	uts->of_root = gd->of_root;
 #endif
@@ -180,20 +181,16 @@ static int dm_test_main(const char *test_name)
 			ut_assertok(dm_do_test(uts, test, false));
 			runs++;
 		}
-		found++;
+		run_count += runs;
 	}
 
-	if (test_name && !found)
+	if (test_name && !run_count)
 		printf("Test '%s' not found\n", test_name);
 	else
 		printf("Failures: %d\n", uts->fail_count);
 
-	/* Put everything back to normal so that sandbox works as expected */
-#ifdef CONFIG_OF_LIVE
-	gd->of_root = uts->of_root;
-#endif
 	gd->dm_root = NULL;
-	ut_assertok(dm_init(IS_ENABLED(CONFIG_OF_LIVE)));
+	ut_assertok(dm_init(false));
 	dm_scan_platdata(false);
 	dm_scan_fdt(gd->fdt_blob, false);
 

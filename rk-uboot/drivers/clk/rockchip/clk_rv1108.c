@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * (C) Copyright 2016 Rockchip Electronics Co., Ltd
  * Author: Andy Yan <andy.yan@rock-chips.com>
+ * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -11,9 +11,9 @@
 #include <errno.h>
 #include <syscon.h>
 #include <asm/io.h>
-#include <asm/arch-rockchip/clock.h>
-#include <asm/arch-rockchip/cru_rv1108.h>
-#include <asm/arch-rockchip/hardware.h>
+#include <asm/arch/clock.h>
+#include <asm/arch/cru_rv1108.h>
+#include <asm/arch/hardware.h>
 #include <dm/lists.h>
 #include <dt-bindings/clock/rv1108-cru.h>
 
@@ -484,6 +484,29 @@ static ulong rv1108_i2c_set_clk(struct rv1108_cru *cru, ulong clk_id, uint hz)
 	return rv1108_i2c_get_clk(cru, clk_id);
 }
 
+static ulong rv1108_spi_get_clk(struct rv1108_cru *cru)
+{
+	u32 div, con;
+
+	con = readl(&cru->clksel_con[11]);
+	div = (con & SPI_DIV_MASK) >> SPI_DIV_SHIFT;
+
+	return DIV_TO_RATE(rkclk_pll_get_rate(cru, CLK_GENERAL), div);
+}
+
+static ulong  rv1108_spi_set_clk(struct rv1108_cru *cru, ulong hz)
+{
+	int div;
+
+	div = DIV_ROUND_UP(rkclk_pll_get_rate(cru, CLK_GENERAL), hz);
+	assert(div - 1 < 128);
+	rk_clrsetreg(&cru->clksel_con[11],
+		     SPI_PLL_SEL_MASK | SPI_DIV_MASK,
+		     SPI_PLL_SEL_GPLL << SPI_PLL_SEL_SHIFT |
+		     (div - 1) << SPI_DIV_SHIFT);
+	return  rv1108_spi_get_clk(cru);
+}
+
 static ulong rv1108_mmc_get_clk(struct rv1108_cru *cru)
 {
 	u32 div, con;
@@ -513,18 +536,18 @@ static ulong rv1108_mmc_set_clk(struct rv1108_cru *cru, ulong rate)
 	if (div < 127) {
 		debug("%s source gpll\n", __func__);
 		rk_clrsetreg(&cru->clksel_con[25], EMMC_PLL_SEL_MASK,
-			    (EMMC_PLL_SEL_GPLL << EMMC_PLL_SEL_SHIFT));
+			     (EMMC_PLL_SEL_GPLL << EMMC_PLL_SEL_SHIFT));
 		pll_rate = rkclk_pll_get_rate(cru, CLK_GENERAL);
 	} else {
 		debug("%s source 24m\n", __func__);
 		rk_clrsetreg(&cru->clksel_con[25], EMMC_PLL_SEL_MASK,
-			    (EMMC_PLL_SEL_OSC << EMMC_PLL_SEL_SHIFT));
+			     (EMMC_PLL_SEL_OSC << EMMC_PLL_SEL_SHIFT));
 		pll_rate = OSC_HZ;
 	}
 
 	div = DIV_ROUND_UP(pll_rate / 2, rate);
 	rk_clrsetreg(&cru->clksel_con[26], EMMC_CLK_DIV_MASK,
-		    ((div - 1) << EMMC_CLK_DIV_SHIFT));
+		     ((div - 1) << EMMC_CLK_DIV_SHIFT));
 
 	debug("%s set_rate %ld div %d\n", __func__,  rate, div);
 
@@ -563,6 +586,8 @@ static ulong rv1108_clk_get_rate(struct clk *clk)
 	case SCLK_EMMC:
 	case SCLK_EMMC_SAMPLE:
 		return rv1108_mmc_get_clk(priv->cru);
+	case SCLK_SPI:
+		return rv1108_spi_get_clk(priv->cru);
 	default:
 		return -ENOENT;
 	}
@@ -614,6 +639,9 @@ static ulong rv1108_clk_set_rate(struct clk *clk, ulong rate)
 	case SCLK_EMMC:
 		new_rate = rv1108_mmc_set_clk(priv->cru, rate);
 		break;
+	case SCLK_SPI:
+		new_rate = rv1108_spi_set_clk(priv->cru, rate);
+		break;
 	default:
 		return -ENOENT;
 	}
@@ -652,6 +680,14 @@ static void rkclk_init(struct rv1108_cru *cru)
 
 	rk_clrsetreg(&cru->clksel_con[0], CORE_CLK_DIV_MASK,
 		     0 << MAC_CLK_DIV_SHIFT);
+	rk_clrsetreg(&cru->clksel_con[27],
+		     NANDC_PLL_SEL_MASK | NANDC_CLK_DIV_MASK,
+		     NANDC_PLL_SEL_GPLL << NANDC_PLL_SEL_SHIFT |
+		     7 << NANDC_CLK_DIV_SHIFT);
+	rk_clrsetreg(&cru->clksel_con[27],
+		     SFC_PLL_SEL_MASK | SFC_CLK_DIV_MASK,
+		     SFC_PLL_SEL_GPLL << SFC_PLL_SEL_SHIFT |
+		     11 << SFC_CLK_DIV_SHIFT);
 
 	printf("APLL: %d DPLL:%d GPLL:%d\n", apll, dpll, gpll);
 	printf("ACLK_BUS: %d ACLK_PERI:%d HCLK_PERI:%d PCLK_PERI:%d\n",
@@ -697,12 +733,6 @@ static int rv1108_clk_bind(struct udevice *dev)
 		sys_child->priv = priv;
 	}
 
-#if CONFIG_IS_ENABLED(CONFIG_RESET_ROCKCHIP)
-	ret = offsetof(struct rk3368_cru, softrst_con[0]);
-	ret = rockchip_reset_bind(dev, ret, 13);
-	if (ret)
-		debug("Warning: software reset driver bind faile\n");
-#endif
 	ret = device_bind_driver_to_node(dev, "rockchip_reset", "reset",
 					 dev_ofnode(dev), &sf_child);
 	if (ret) {

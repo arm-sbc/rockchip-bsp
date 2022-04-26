@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2017, STMicroelectronics - All Rights Reserved
- * Author(s): Vikas Manocha, <vikas.manocha@st.com> for STMicroelectronics.
+ * (C) Copyright 2017
+ * Vikas Manocha, ST Micoelectronics, vikas.manocha@st.com.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -54,7 +55,7 @@ enum cache_action {
 	FLUSH_INVAL_SET_WAY,	/* d-cache clean & invalidate by set/ways */
 };
 
-#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
+#ifndef CONFIG_SYS_DCACHE_OFF
 struct dcache_config {
 	u32 ways;
 	u32 sets;
@@ -292,7 +293,7 @@ void invalidate_dcache_all(void)
 }
 #endif
 
-#if !CONFIG_IS_ENABLED(SYS_ICACHE_OFF)
+#ifndef CONFIG_SYS_ICACHE_OFF
 
 void invalidate_icache_all(void)
 {
@@ -349,10 +350,10 @@ int icache_status(void)
 
 void enable_caches(void)
 {
-#if !CONFIG_IS_ENABLED(SYS_ICACHE_OFF)
+#ifndef CONFIG_SYS_ICACHE_OFF
 	icache_enable();
 #endif
-#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
+#ifndef CONFIG_SYS_DCACHE_OFF
 	dcache_enable();
 #endif
 }

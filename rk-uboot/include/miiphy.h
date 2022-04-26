@@ -1,5 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0 OR IBM-pibs */
 /*
+ * SPDX-License-Identifier:	GPL-2.0	IBM-pibs
+ *
  * Additions (C) Copyright 2009 Industrie Dial Face S.p.A.
  */
 /*----------------------------------------------------------------------------+
@@ -39,7 +40,6 @@ void miiphy_init(void);
 int miiphy_set_current_dev(const char *devname);
 const char *miiphy_get_current_dev(void);
 struct mii_dev *mdio_get_current_dev(void);
-struct list_head *mdio_get_list_head(void);
 struct mii_dev *miiphy_get_dev_by_name(const char *devname);
 struct phy_device *mdio_phydev_for_ethname(const char *devname);
 
@@ -164,26 +164,6 @@ void dm_mdio_probe_devices(void);
 struct phy_device *dm_mdio_phy_connect(struct udevice *dev, int addr,
 				       struct udevice *ethdev,
 				       phy_interface_t interface);
-
-#endif
-
-#ifdef CONFIG_DM_MDIO_MUX
-
-/* indicates none of the child buses is selected */
-#define MDIO_MUX_SELECT_NONE	-1
-
-/**
- * struct mdio_mux_ops - MDIO MUX operations
- *
- * @select: Selects a child bus
- * @deselect: Clean up selection.  Optional, can be NULL
- */
-struct mdio_mux_ops {
-	int (*select)(struct udevice *mux, int cur, int sel);
-	int (*deselect)(struct udevice *mux, int sel);
-};
-
-#define mdio_mux_get_ops(dev) ((struct mdio_mux_ops *)(dev)->driver->ops)
 
 #endif
 

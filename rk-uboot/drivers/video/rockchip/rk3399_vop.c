@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2017 Theobroma Systems Design und Consulting GmbH
  * Copyright (c) 2015 Google, Inc
  * Copyright 2014 Rockchip Inc.
+ *
+ * SPDX-License-Identifier: GPL-2.0+
  */
 
 #include <common.h>
@@ -10,7 +11,7 @@
 #include <dm.h>
 #include <regmap.h>
 #include <video.h>
-#include <asm/arch-rockchip/hardware.h>
+#include <asm/hardware.h>
 #include <asm/io.h>
 #include "rk_vop.h"
 

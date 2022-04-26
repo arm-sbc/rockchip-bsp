@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2002-2004
  * Brad Kemp, Seranoa Networks, Brad.Kemp@seranoa.com
@@ -11,6 +10,8 @@
  *
  * Copyright (C) 2006
  * Tolunay Orkun <listmember@orkun.us>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* The DEBUG define must be before common to enable debugging */
@@ -19,14 +20,13 @@
 #include <common.h>
 #include <console.h>
 #include <dm.h>
-#include <env.h>
 #include <errno.h>
 #include <fdt_support.h>
 #include <asm/processor.h>
 #include <asm/io.h>
 #include <asm/byteorder.h>
 #include <asm/unaligned.h>
-#include <env_internal.h>
+#include <environment.h>
 #include <mtd/cfi_flash.h>
 #include <watchdog.h>
 
@@ -178,8 +178,7 @@ __maybe_weak u64 flash_read64(void *addr)
 /*-----------------------------------------------------------------------
  */
 #if defined(CONFIG_ENV_IS_IN_FLASH) || defined(CONFIG_ENV_ADDR_REDUND) || \
-	(defined(CONFIG_SYS_MONITOR_BASE) && \
-	(CONFIG_SYS_MONITOR_BASE >= CONFIG_SYS_FLASH_BASE))
+	(CONFIG_SYS_MONITOR_BASE >= CONFIG_SYS_FLASH_BASE)
 static flash_info_t *flash_get_info(ulong base)
 {
 	int i;
@@ -2330,8 +2329,7 @@ static void flash_protect_default(void)
 #endif
 
 	/* Monitor protection ON by default */
-#if defined(CONFIG_SYS_MONITOR_BASE) && \
-	(CONFIG_SYS_MONITOR_BASE >= CONFIG_SYS_FLASH_BASE) && \
+#if (CONFIG_SYS_MONITOR_BASE >= CONFIG_SYS_FLASH_BASE) && \
 	(!defined(CONFIG_MONITOR_IS_IN_RAM))
 	flash_protect(FLAG_PROTECT_SET,
 		      CONFIG_SYS_MONITOR_BASE,

@@ -1,14 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2017 Rockchip Electronics Co., Ltd
  * Author: Andy Yan <andy.yan@rock-chips.com>
  * (C) Copyright 2017 Theobroma Systems Design und Consulting GmbH
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
 #include <syscon.h>
-#include <asm/arch-rockchip/clock.h>
+#include <asm/arch/clock.h>
 
 static const struct udevice_id rk3368_syscon_ids[] = {
 	{ .compatible = "rockchip,rk3368-grf",
@@ -25,6 +26,9 @@ static const struct udevice_id rk3368_syscon_ids[] = {
 U_BOOT_DRIVER(syscon_rk3368) = {
 	.name = "rk3368_syscon",
 	.id = UCLASS_SYSCON,
+#if !CONFIG_IS_ENABLED(OF_PLATDATA)
+	.bind = dm_scan_fdt_dev,
+#endif
 	.of_match = rk3368_syscon_ids,
 };
 

@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2017 Amarula Solutions
  *
  * Configuration settings for Amarula Vyasa RK3288.
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -17,6 +18,7 @@
 	func(MMC, mmc, 1) \
 
 #define CONFIG_SYS_MMC_ENV_DEV 1
+#undef CONFIG_CMD_USB_MASS_STORAGE
 
 #ifndef CONFIG_TPL_BUILD
 

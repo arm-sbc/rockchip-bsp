@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2000-2004
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef _PART_H
 #define _PART_H
@@ -28,12 +29,14 @@ struct block_drvr {
 #define PART_TYPE_ISO		0x03
 #define PART_TYPE_AMIGA		0x04
 #define PART_TYPE_EFI		0x05
+#define PART_TYPE_RKPARM	0x06
 
 /* maximum number of partition entries supported by search */
 #define DOS_ENTRY_NUMBERS	8
 #define ISO_ENTRY_NUMBERS	64
 #define MAC_ENTRY_NUMBERS	64
 #define AMIGA_ENTRY_NUMBERS	8
+#define RKPARM_ENTRY_NUMBERS	128
 /*
  * Type string for U-Boot bootable partitions
  */
@@ -102,7 +105,7 @@ int part_get_info(struct blk_desc *dev_desc, int part, disk_partition_t *info);
  * a partition occupying the entire disk.
  */
 int part_get_info_whole_disk(struct blk_desc *dev_desc, disk_partition_t *info);
-
+const char *part_get_type(struct blk_desc *dev_desc);
 void part_print(struct blk_desc *dev_desc);
 void part_init(struct blk_desc *dev_desc);
 void dev_print(struct blk_desc *dev_desc);
@@ -173,21 +176,6 @@ int blk_get_device_part_str(const char *ifname, const char *dev_part_str,
 			    disk_partition_t *info, int allow_whole_dev);
 
 /**
- * part_get_info_by_name_type() - Search for a partition by name
- *                                for only specified partition type
- *
- * @param dev_desc - block device descriptor
- * @param gpt_name - the specified table entry name
- * @param info - returns the disk partition info
- * @param part_type - only search in partitions of this type
- *
- * @return - the partition number on match (starting on 1), -1 on no match,
- * otherwise error
- */
-int part_get_info_by_name_type(struct blk_desc *dev_desc, const char *name,
-			       disk_partition_t *info, int part_type);
-
-/**
  * part_get_info_by_name() - Search for a partition by name
  *                           among all available registered partitions
  *
@@ -200,27 +188,6 @@ int part_get_info_by_name_type(struct blk_desc *dev_desc, const char *name,
  */
 int part_get_info_by_name(struct blk_desc *dev_desc,
 			      const char *name, disk_partition_t *info);
-
-/**
- * Get partition info from dev number + part name, or dev number + part number.
- *
- * Parse a device number and partition description (either name or number)
- * in the form of device number plus partition name separated by a "#"
- * (like "device_num#partition_name") or a device number plus a partition number
- * separated by a ":". For example both "0#misc" and "0:1" can be valid
- * partition descriptions for a given interface. If the partition is found, sets
- * dev_desc and part_info accordingly with the information of the partition.
- *
- * @param[in] dev_iface	Device interface
- * @param[in] dev_part_str Input partition description, like "0#misc" or "0:1"
- * @param[out] dev_desc	Place to store the device description pointer
- * @param[out] part_info Place to store the partition information
- * @return 0 on success, or a negative on error
- */
-int part_get_info_by_dev_and_name_or_num(const char *dev_iface,
-					 const char *dev_part_str,
-					 struct blk_desc **dev_desc,
-					 disk_partition_t *part_info);
 
 /**
  * part_set_generic_name() - create generic partition like hda1 or sdb2
@@ -247,6 +214,8 @@ static inline int part_get_info(struct blk_desc *dev_desc, int part,
 static inline int part_get_info_whole_disk(struct blk_desc *dev_desc,
 					   disk_partition_t *info)
 { return -1; }
+
+static inline const char *part_get_type(struct blk_desc *dev_desc) { return NULL; }
 static inline void part_print(struct blk_desc *dev_desc) {}
 static inline void part_init(struct blk_desc *dev_desc) {}
 static inline void dev_print(struct blk_desc *dev_desc) {}
@@ -262,21 +231,15 @@ static inline int blk_get_device_part_str(const char *ifname,
 #endif
 
 /*
- * We don't support printing partition information in SPL and only support
- * getting partition information in a few cases.
+ * We don't support printing partition information in SPL.
  */
 #ifdef CONFIG_SPL_BUILD
-# define part_print_ptr(x)	NULL
-# if defined(CONFIG_SPL_FS_EXT4) || defined(CONFIG_SPL_FS_FAT) || \
-	defined(CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_PARTITION)
-#  define part_get_info_ptr(x)	x
-# else
-#  define part_get_info_ptr(x)	NULL
-# endif
+#define part_print_ptr(x)	NULL
 #else
-#define part_print_ptr(x)	x
-#define part_get_info_ptr(x)	x
+#define part_print_ptr(x)       x
 #endif
+
+#define part_get_info_ptr(x)	x
 
 
 struct part_driver {

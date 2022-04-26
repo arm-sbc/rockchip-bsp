@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2015, Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -10,7 +11,7 @@
 #include <asm/arch/lpddr2.h>
 #include <asm/arch/clock.h>
 #include <mmc.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <i2c.h>
@@ -74,7 +75,7 @@ void setup_iomux_nfc(void)
 }
 #endif
 
-#ifdef CONFIG_FSL_ESDHC_IMX
+#ifdef CONFIG_FSL_ESDHC
 struct fsl_esdhc_cfg esdhc_cfg[1] = {
 	{USDHC_BASE_ADDR},
 };

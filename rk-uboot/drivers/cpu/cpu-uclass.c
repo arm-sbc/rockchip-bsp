@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,28 +12,7 @@
 #include <dm/lists.h>
 #include <dm/root.h>
 
-int cpu_probe_all(void)
-{
-	struct udevice *cpu;
-	int ret;
-
-	ret = uclass_first_device(UCLASS_CPU, &cpu);
-	if (ret) {
-		debug("%s: No CPU found (err = %d)\n", __func__, ret);
-		return ret;
-	}
-
-	while (cpu) {
-		ret = uclass_next_device(&cpu);
-		if (ret) {
-			debug("%s: Error while probing CPU (err = %d)\n",
-			      __func__, ret);
-			return ret;
-		}
-	}
-
-	return 0;
-}
+DECLARE_GLOBAL_DATA_PTR;
 
 int cpu_get_desc(struct udevice *dev, char *buf, int size)
 {

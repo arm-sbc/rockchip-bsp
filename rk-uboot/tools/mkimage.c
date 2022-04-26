@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008 Semihalf
  *
  * (C) Copyright 2000-2009
  * DENX Software Engineering
  * Wolfgang Denk, wd@denx.de
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "mkimage.h"
@@ -94,7 +95,9 @@ static void usage(const char *msg)
 	fprintf(stderr,
 		"          -D => set all options for device tree compiler\n"
 		"          -f => input filename for FIT source\n"
-		"          -i => input filename for ramdisk file\n");
+		"          -i => input filename for ramdisk file\n"
+		"          -v => set FIT image version in decimal\n");
+
 #ifdef CONFIG_FIT_SIGNATURE
 	fprintf(stderr,
 		"Signing / verified boot options: [-E] [-k keydir] [-K dtb] [ -c <comment>] [-p addr] [-r] [-N engine]\n"
@@ -105,7 +108,7 @@ static void usage(const char *msg)
 		"          -F => re-sign existing FIT image\n"
 		"          -p => place external data at a static position\n"
 		"          -r => mark keys used as 'required' in dtb\n"
-		"          -N => openssl engine to use for signing\n");
+		"          -N => engine to use for signing (pkcs11)\n");
 #else
 	fprintf(stderr,
 		"Signing / verified boot not supported (CONFIG_FIT_SIGNATURE undefined)\n");
@@ -143,7 +146,7 @@ static void process_args(int argc, char **argv)
 	int opt;
 
 	while ((opt = getopt(argc, argv,
-			     "a:A:b:c:C:d:D:e:Ef:Fk:i:K:ln:N:p:O:rR:qsT:vVx")) != -1) {
+			     "a:A:b:c:C:d:D:e:Ef:Fk:i:K:ln:N:p:O:rR:qsT:v:VxX:")) != -1) {
 		switch (opt) {
 		case 'a':
 			params.addr = strtoull(optarg, &ptr, 16);
@@ -270,13 +273,21 @@ static void process_args(int argc, char **argv)
 			}
 			break;
 		case 'v':
-			params.vflag++;
+			params.vflag = strtoull(optarg, &ptr, 10);
+			if (*ptr) {
+				fprintf(stderr, "%s: invalid version length %s\n",
+					params.cmdname, optarg);
+				exit(EXIT_FAILURE);
+			}
 			break;
 		case 'V':
 			printf("mkimage version %s\n", PLAIN_VERSION);
 			exit(EXIT_SUCCESS);
 		case 'x':
 			params.xflag++;
+			break;
+		case 'X':
+			params.extraparams = optarg;
 			break;
 		default:
 			usage("Invalid option");
@@ -300,8 +311,6 @@ static void process_args(int argc, char **argv)
 		else if (!params.datafile)
 			usage("Missing data file for auto-FIT (use -d)");
 	} else if (type != IH_TYPE_INVALID) {
-		if (type == IH_TYPE_SCRIPT && !params.datafile)
-			usage("Missing data file for script (use -d)");
 		params.type = type;
 	}
 
@@ -318,7 +327,6 @@ int main(int argc, char **argv)
 	struct image_type_params *tparams = NULL;
 	int pad_len = 0;
 	int dfd;
-	size_t map_len;
 
 	params.cmdname = *argv;
 	params.addr = 0;
@@ -403,21 +411,14 @@ int main(int argc, char **argv)
 			exit (EXIT_FAILURE);
 		}
 
-		if (params.fflag) {
-			/*
-			 * Verifies the header format based on the expected header for image
-			 * type in tparams
-			 */
-			retval = imagetool_verify_print_header_by_type(ptr, &sbuf,
-					tparams, &params);
-		} else {
-			/**
-			 * When listing the image, we are not given the image type. Simply check all
-			 * image types to find one that matches our header
-			 */
-			retval = imagetool_verify_print_header(ptr, &sbuf,
-					tparams, &params);
-		}
+		/*
+		 * scan through mkimage registry for all supported image types
+		 * and verify the input image file header for match
+		 * Print the image information for matched image type
+		 * Returns the error code if not matched
+		 */
+		retval = imagetool_verify_print_header(ptr, &sbuf,
+				tparams, &params);
 
 		(void) munmap((void *)ptr, sbuf.st_size);
 		(void) close (ifd);
@@ -425,7 +426,8 @@ int main(int argc, char **argv)
 		exit (retval);
 	}
 
-	if ((params.type != IH_TYPE_MULTI) && (params.type != IH_TYPE_SCRIPT)) {
+	if ((params.type != IH_TYPE_MULTI) && (params.type != IH_TYPE_SCRIPT) &&
+	    (params.type != IH_TYPE_RKNAND)) {
 		dfd = open(params.datafile, O_RDONLY | O_BINARY);
 		if (dfd < 0) {
 			fprintf(stderr, "%s: Can't open %s: %s\n",
@@ -484,7 +486,7 @@ int main(int argc, char **argv)
 					}
 					size = cpu_to_uimage (sbuf.st_size);
 				} else {
-					size = 0;
+					size = IMAGE_PARAM_INVAL;
 				}
 
 				if (write(ifd, (char *)&size, sizeof(size)) != sizeof(size)) {
@@ -523,25 +525,13 @@ int main(int argc, char **argv)
 		} else if (params.type == IH_TYPE_PBLIMAGE) {
 			/* PBL has special Image format, implements its' own */
 			pbl_load_uboot(ifd, &params);
-		} else if (params.type == IH_TYPE_ZYNQMPBIF) {
-			/* Image file is meta, walk through actual targets */
+		} else if ((params.type == IH_TYPE_RKSD) ||
+				(params.type == IH_TYPE_RKSPI) ||
+				(params.type == IH_TYPE_RKNAND)) {
+			/* Rockchip has special Image format */
 			int ret;
 
-			ret = zynqmpbif_copy_image(ifd, &params);
-			if (ret)
-				return ret;
-		} else if (params.type == IH_TYPE_IMX8IMAGE) {
-			/* i.MX8/8X has special Image format */
-			int ret;
-
-			ret = imx8image_copy_image(ifd, &params);
-			if (ret)
-				return ret;
-		} else if (params.type == IH_TYPE_IMX8MIMAGE) {
-			/* i.MX8M has special Image format */
-			int ret;
-
-			ret = imx8mimage_copy_image(ifd, &params);
+			ret = rockchip_copy_image(ifd, &params);
 			if (ret)
 				return ret;
 		} else {
@@ -598,8 +588,7 @@ int main(int argc, char **argv)
 	}
 	params.file_size = sbuf.st_size;
 
-	map_len = sbuf.st_size;
-	ptr = mmap(0, map_len, PROT_READ | PROT_WRITE, MAP_SHARED, ifd, 0);
+	ptr = mmap(0, sbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED, ifd, 0);
 	if (ptr == MAP_FAILED) {
 		fprintf (stderr, "%s: Can't map %s: %s\n",
 			params.cmdname, params.imagefile, strerror(errno));
@@ -619,11 +608,12 @@ int main(int argc, char **argv)
 	if (tparams->print_header)
 		tparams->print_header (ptr);
 	else {
-		fprintf (stderr, "%s: Can't print header for %s\n",
-			params.cmdname, tparams->name);
+		fprintf (stderr, "%s: Can't print header for %s: %s\n",
+			params.cmdname, tparams->name, strerror(errno));
+		exit (EXIT_FAILURE);
 	}
 
-	(void)munmap((void *)ptr, map_len);
+	(void) munmap((void *)ptr, sbuf.st_size);
 
 	/* We're a bit of paranoid */
 #if defined(_POSIX_SYNCHRONIZED_IO) && \
@@ -674,6 +664,11 @@ copy_file (int ifd, const char *datafile, int pad)
 		fprintf (stderr, "%s: Can't stat %s: %s\n",
 			params.cmdname, datafile, strerror(errno));
 		exit (EXIT_FAILURE);
+	}
+
+	if (sbuf.st_size == 0) {
+		(void) close (dfd);
+		return;
 	}
 
 	ptr = mmap(0, sbuf.st_size, PROT_READ, MAP_SHARED, dfd, 0);

@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Take linux kernel driver drivers/gpio/gpio-pca953x.c for reference.
  *
  * Copyright (C) 2016 Peng Fan <van.freenix@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  */
 
@@ -48,6 +49,8 @@ enum {
 
 #define MAX_BANK 5
 #define BANK_SZ 8
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /*
  * struct pca953x_info - Data for pca953x
@@ -120,29 +123,9 @@ static int pca953x_read_regs(struct udevice *dev, int reg, u8 *val)
 		ret = dm_i2c_read(dev, reg << 1, val, info->bank_count);
 	} else if (info->gpio_count == 40) {
 		/* Auto increment */
-		ret = dm_i2c_read(dev, (reg << 3) | 0x80, val,
-				  info->bank_count);
+		ret = dm_i2c_read(dev, (reg << 3) | 0x80, val, info->bank_count);
 	} else {
 		dev_err(dev, "Unsupported now\n");
-		return -EINVAL;
-	}
-
-	return ret;
-}
-
-static int pca953x_write_regs(struct udevice *dev, int reg, u8 *val)
-{
-	struct pca953x_info *info = dev_get_platdata(dev);
-	int ret = 0;
-
-	if (info->gpio_count <= 8) {
-		ret = dm_i2c_write(dev, reg, val, 1);
-	} else if (info->gpio_count <= 16) {
-		ret = dm_i2c_write(dev, reg << 1, val, info->bank_count);
-	} else if (info->gpio_count == 40) {
-		/* Auto increment */
-		ret = dm_i2c_write(dev, (reg << 3) | 0x80, val, info->bank_count);
-	} else {
 		return -EINVAL;
 	}
 
@@ -160,7 +143,7 @@ static int pca953x_is_output(struct udevice *dev, int offset)
 	return !(info->reg_direction[bank] & (1 << off));
 }
 
-static int pca953x_get_value(struct udevice *dev, uint offset)
+static int pca953x_get_value(struct udevice *dev, unsigned offset)
 {
 	int ret;
 	u8 val = 0;
@@ -174,7 +157,8 @@ static int pca953x_get_value(struct udevice *dev, uint offset)
 	return (val >> off) & 0x1;
 }
 
-static int pca953x_set_value(struct udevice *dev, uint offset, int value)
+static int pca953x_set_value(struct udevice *dev, unsigned offset,
+			     int value)
 {
 	struct pca953x_info *info = dev_get_platdata(dev);
 	int bank = offset / BANK_SZ;
@@ -196,7 +180,7 @@ static int pca953x_set_value(struct udevice *dev, uint offset, int value)
 	return 0;
 }
 
-static int pca953x_set_direction(struct udevice *dev, uint offset, int dir)
+static int pca953x_set_direction(struct udevice *dev, unsigned offset, int dir)
 {
 	struct pca953x_info *info = dev_get_platdata(dev);
 	int bank = offset / BANK_SZ;
@@ -218,12 +202,13 @@ static int pca953x_set_direction(struct udevice *dev, uint offset, int dir)
 	return 0;
 }
 
-static int pca953x_direction_input(struct udevice *dev, uint offset)
+static int pca953x_direction_input(struct udevice *dev, unsigned offset)
 {
 	return pca953x_set_direction(dev, offset, PCA953X_DIRECTION_IN);
 }
 
-static int pca953x_direction_output(struct udevice *dev, uint offset, int value)
+static int pca953x_direction_output(struct udevice *dev, unsigned offset,
+				    int value)
 {
 	/* Configure output value. */
 	pca953x_set_value(dev, offset, value);
@@ -234,7 +219,7 @@ static int pca953x_direction_output(struct udevice *dev, uint offset, int value)
 	return 0;
 }
 
-static int pca953x_get_function(struct udevice *dev, uint offset)
+static int pca953x_get_function(struct udevice *dev, unsigned offset)
 {
 	if (pca953x_is_output(dev, offset))
 		return GPIOF_OUTPUT;
@@ -264,15 +249,23 @@ static int pca953x_probe(struct udevice *dev)
 {
 	struct pca953x_info *info = dev_get_platdata(dev);
 	struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(dev);
-	char name[32], label[8], *str;
+	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
+	char name[32], *str;
 	int addr;
 	ulong driver_data;
 	int ret;
-	int size;
-	const u8 *tmp;
-	u8 val[MAX_BANK];
 
-	addr = dev_read_addr(dev);
+	if (!info) {
+		dev_err(dev, "platdata not ready\n");
+		return -ENOMEM;
+	}
+
+	if (!chip) {
+		dev_err(dev, "i2c not ready\n");
+		return -ENODEV;
+	}
+
+	addr = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev), "reg", 0);
 	if (addr == 0)
 		return -ENODEV;
 
@@ -306,24 +299,7 @@ static int pca953x_probe(struct udevice *dev)
 		return ret;
 	}
 
-	tmp = dev_read_prop(dev, "label", &size);
-
-	if (tmp) {
-		memcpy(label, tmp, sizeof(label) - 1);
-		label[sizeof(label) - 1] = '\0';
-		snprintf(name, sizeof(name), "%s@%x_", label, info->addr);
-	} else {
-		snprintf(name, sizeof(name), "gpio@%x_", info->addr);
-	}
-
-	/* Clear the polarity registers to no invert */
-	memset(val, 0, MAX_BANK);
-	ret = pca953x_write_regs(dev, PCA953X_INVERT, val);
-	if (ret < 0) {
-		dev_err(dev, "Error writing invert register\n");
-		return ret;
-	}
-
+	snprintf(name, sizeof(name), "gpio@%x_", info->addr);
 	str = strdup(name);
 	if (!str)
 		return -ENOMEM;
@@ -363,7 +339,6 @@ static const struct udevice_id pca953x_ids[] = {
 	{ .compatible = "ti,tca6408", .data = OF_953X(8, PCA_INT), },
 	{ .compatible = "ti,tca6416", .data = OF_953X(16, PCA_INT), },
 	{ .compatible = "ti,tca6424", .data = OF_953X(24, PCA_INT), },
-	{ .compatible = "ti,tca9539", .data = OF_953X(16, PCA_INT), },
 
 	{ .compatible = "onsemi,pca9654", .data = OF_953X(8, PCA_INT), },
 

@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2008 RuggedCom, Inc.
  * Richard Retanubun <RichardRetanubun@RuggedCom.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -20,13 +21,10 @@
 #include <efi.h>
 
 #define MSDOS_MBR_SIGNATURE 0xAA55
-#define MSDOS_MBR_BOOT_CODE_SIZE 440
 #define EFI_PMBR_OSTYPE_EFI 0xEF
 #define EFI_PMBR_OSTYPE_EFI_GPT 0xEE
 
-#define GPT_HEADER_SIGNATURE_UBOOT 0x5452415020494645ULL
-#define GPT_HEADER_CHROMEOS_IGNORE 0x454d45524f4e4749ULL // 'IGNOREME'
-
+#define GPT_HEADER_SIGNATURE 0x5452415020494645ULL
 #define GPT_HEADER_REVISION_V1 0x00010000
 #define GPT_PRIMARY_PARTITION_TABLE_LBA 1ULL
 #define GPT_ENTRY_NUMBERS		CONFIG_EFI_PARTITION_ENTRIES_NUMBERS
@@ -114,7 +112,7 @@ typedef struct _gpt_entry {
 } __packed gpt_entry;
 
 typedef struct _legacy_mbr {
-	u8 boot_code[MSDOS_MBR_BOOT_CODE_SIZE];
+	u8 boot_code[440];
 	__le32 unique_mbr_signature;
 	__le16 unknown;
 	struct partition partition_record[4];

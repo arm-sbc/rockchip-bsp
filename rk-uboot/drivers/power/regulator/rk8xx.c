@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
@@ -6,6 +5,8 @@
  * Based on Rockchip's drivers/power/pmic/pmic_rk808.c:
  * Copyright (C) 2012 rockchips
  * zyw <zyw@rock-chips.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -20,12 +21,20 @@
 #endif
 
 /* Not used or exisit register and configure */
-#define NA			0xff
+#define NA			-1
 
 /* Field Definitions */
 #define RK808_BUCK_VSEL_MASK	0x3f
 #define RK808_BUCK4_VSEL_MASK	0xf
 #define RK808_LDO_VSEL_MASK	0x1f
+
+#define RK818_BUCK_VSEL_MASK		0x3f
+#define RK818_BUCK4_VSEL_MASK		0x1f
+#define RK818_LDO_VSEL_MASK		0x1f
+#define RK818_LDO3_ON_VSEL_MASK	0xf
+#define RK818_BOOST_ON_VSEL_MASK	0xe0
+#define RK818_USB_ILIM_SEL_MASK		0x0f
+#define RK818_USB_CHG_SD_VSEL_MASK	0x70
 
 /* RK809 BUCK5 */
 #define RK809_BUCK5_CONFIG(n)		(0xde + (n) * 1)
@@ -45,14 +54,6 @@
 /* RK817 ENABLE */
 #define RK817_POWER_EN(n)		(0xb1 + (n))
 #define RK817_POWER_SLP_EN(n)		(0xb5 + (n))
-
-#define RK818_BUCK_VSEL_MASK		0x3f
-#define RK818_BUCK4_VSEL_MASK		0x1f
-#define RK818_LDO_VSEL_MASK		0x1f
-#define RK818_LDO3_ON_VSEL_MASK	0xf
-#define RK818_BOOST_ON_VSEL_MASK	0xe0
-#define RK818_USB_ILIM_SEL_MASK		0x0f
-#define RK818_USB_CHG_SD_VSEL_MASK	0x70
 
 /*
  * Ramp delay
@@ -86,62 +87,65 @@ struct rk8xx_reg_info {
 	u8 config_reg;
 	u8 vsel_mask;
 	u8 min_sel;
+	/* only for buck now */
+	u8 max_sel;
+	u8 range_num;
 };
 
 static const struct rk8xx_reg_info rk808_buck[] = {
-	{ 712500,   12500, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK808_BUCK_VSEL_MASK, },
-	{ 712500,   12500, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK808_BUCK_VSEL_MASK, },
-	{ 712500,   12500, NA,		      NA,		  REG_BUCK3_CONFIG, RK808_BUCK_VSEL_MASK, },
-	{ 1800000, 100000, REG_BUCK4_ON_VSEL, REG_BUCK4_SLP_VSEL, REG_BUCK4_CONFIG, RK808_BUCK4_VSEL_MASK, },
+	{ 712500,   12500, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK808_BUCK_VSEL_MASK, 0x00, 0x3f, 1},
+	{ 712500,   12500, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK808_BUCK_VSEL_MASK, 0x00, 0x3f, 1},
+	{ NA,       NA,    NA,		      NA,		  REG_BUCK3_CONFIG, NA,                   NA,   NA,   1},
+	{ 1800000, 100000, REG_BUCK4_ON_VSEL, REG_BUCK4_SLP_VSEL, REG_BUCK4_CONFIG, RK808_BUCK4_VSEL_MASK,0x00, 0x0f, 1},
 };
 
 static const struct rk8xx_reg_info rk816_buck[] = {
 	/* buck 1 */
-	{  712500,  12500, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, 0x00, },
-	{ 1800000, 200000, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, 0x3c, },
-	{ 2300000,      0, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, 0x3f, },
+	{  712500,  12500, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, 0x00, 0x3b, 3},
+	{ 1800000, 200000, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, 0x3c, 0x3e, 3},
+	{ 2300000,      0, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, 0x3f, 0x3f, 3},
 	/* buck 2 */
-	{  712500,  12500, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, 0x00, },
-	{ 1800000, 200000, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, 0x3c, },
-	{ 2300000,      0, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, 0x3f, },
+	{  712500,  12500, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, 0x00, 0x3b, 3},
+	{ 1800000, 200000, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, 0x3c, 0x3e, 3},
+	{ 2300000,      0, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, 0x3f, 0x3f, 3},
 	/* buck 3 */
-	{ 712500,   12500, NA,		      NA,		  REG_BUCK3_CONFIG, RK818_BUCK_VSEL_MASK, },
+	{  NA,     NA,     NA,		      NA,		  REG_BUCK3_CONFIG, NA,                   NA,   NA,   1},
 	/* buck 4 */
-	{  800000, 100000, REG_BUCK4_ON_VSEL, REG_BUCK4_SLP_VSEL, REG_BUCK4_CONFIG, RK818_BUCK4_VSEL_MASK, },
+	{  800000, 100000, REG_BUCK4_ON_VSEL, REG_BUCK4_SLP_VSEL, REG_BUCK4_CONFIG, RK818_BUCK4_VSEL_MASK,0x00, 0x1b, 1},
 };
 
 static const struct rk8xx_reg_info rk809_buck5[] = {
 	/* buck 5 */
-	{ 1500000,	0, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x00, },
-	{ 1800000, 200000, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x01, },
-	{ 2800000, 200000, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x04, },
-	{ 3300000, 300000, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x06, },
+	{ 1500000,	0, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x00, 0x00, 4},
+	{ 1800000, 200000, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x01, 0x03, 4},
+	{ 2800000, 200000, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x04, 0x05, 4},
+	{ 3300000, 300000, RK809_BUCK5_CONFIG(0), RK809_BUCK5_CONFIG(1), NA, RK809_BUCK5_VSEL_MASK, 0x06, 0x07, 4},
 };
 
 static const struct rk8xx_reg_info rk817_buck[] = {
 	/* buck 1 */
-	{  500000,  12500, RK817_BUCK_ON_VSEL(1), RK817_BUCK_SLP_VSEL(1), RK817_BUCK_CONFIG(1), RK817_BUCK_VSEL_MASK, 0x00, },
-	{ 1500000, 100000, RK817_BUCK_ON_VSEL(1), RK817_BUCK_SLP_VSEL(1), RK817_BUCK_CONFIG(1), RK817_BUCK_VSEL_MASK, 0x50, },
-	{ 2400000,	0, RK817_BUCK_ON_VSEL(1), RK817_BUCK_SLP_VSEL(1), RK817_BUCK_CONFIG(1), RK817_BUCK_VSEL_MASK, 0x59, },
+	{  500000,  12500, RK817_BUCK_ON_VSEL(1), RK817_BUCK_SLP_VSEL(1), RK817_BUCK_CONFIG(1), RK817_BUCK_VSEL_MASK, 0x00, 0x4f, 3},
+	{ 1500000, 100000, RK817_BUCK_ON_VSEL(1), RK817_BUCK_SLP_VSEL(1), RK817_BUCK_CONFIG(1), RK817_BUCK_VSEL_MASK, 0x50, 0x58, 3},
+	{ 2400000,	0, RK817_BUCK_ON_VSEL(1), RK817_BUCK_SLP_VSEL(1), RK817_BUCK_CONFIG(1), RK817_BUCK_VSEL_MASK, 0x59, 0x59, 3},
 	/* buck 2 */
-	{  500000,  12500, RK817_BUCK_ON_VSEL(2), RK817_BUCK_SLP_VSEL(2), RK817_BUCK_CONFIG(2), RK817_BUCK_VSEL_MASK, 0x00, },
-	{ 1500000, 100000, RK817_BUCK_ON_VSEL(2), RK817_BUCK_SLP_VSEL(2), RK817_BUCK_CONFIG(2), RK817_BUCK_VSEL_MASK, 0x50, },
-	{ 2400000,	0, RK817_BUCK_ON_VSEL(2), RK817_BUCK_SLP_VSEL(2), RK817_BUCK_CONFIG(2), RK817_BUCK_VSEL_MASK, 0x59, },
+	{  500000,  12500, RK817_BUCK_ON_VSEL(2), RK817_BUCK_SLP_VSEL(2), RK817_BUCK_CONFIG(2), RK817_BUCK_VSEL_MASK, 0x00, 0x4f, 3},
+	{ 1500000, 100000, RK817_BUCK_ON_VSEL(2), RK817_BUCK_SLP_VSEL(2), RK817_BUCK_CONFIG(2), RK817_BUCK_VSEL_MASK, 0x50, 0x58, 3},
+	{ 2400000,	0, RK817_BUCK_ON_VSEL(2), RK817_BUCK_SLP_VSEL(2), RK817_BUCK_CONFIG(2), RK817_BUCK_VSEL_MASK, 0x59, 0x59, 3},
 	/* buck 3 */
-	{  500000,  12500, RK817_BUCK_ON_VSEL(3), RK817_BUCK_SLP_VSEL(3), RK817_BUCK_CONFIG(3), RK817_BUCK_VSEL_MASK, 0x00, },
-	{ 1500000, 100000, RK817_BUCK_ON_VSEL(3), RK817_BUCK_SLP_VSEL(3), RK817_BUCK_CONFIG(3), RK817_BUCK_VSEL_MASK, 0x50, },
-	{ 2400000,	0, RK817_BUCK_ON_VSEL(3), RK817_BUCK_SLP_VSEL(3), RK817_BUCK_CONFIG(3), RK817_BUCK_VSEL_MASK, 0x59, },
+	{  500000,  12500, RK817_BUCK_ON_VSEL(3), RK817_BUCK_SLP_VSEL(3), RK817_BUCK_CONFIG(3), RK817_BUCK_VSEL_MASK, 0x00, 0x4f, 3},
+	{ 1500000, 100000, RK817_BUCK_ON_VSEL(3), RK817_BUCK_SLP_VSEL(3), RK817_BUCK_CONFIG(3), RK817_BUCK_VSEL_MASK, 0x50, 0x58, 3},
+	{ 2400000,	0, RK817_BUCK_ON_VSEL(3), RK817_BUCK_SLP_VSEL(3), RK817_BUCK_CONFIG(3), RK817_BUCK_VSEL_MASK, 0x59, 0x59, 3},
 	/* buck 4 */
-	{  500000,  12500, RK817_BUCK_ON_VSEL(4), RK817_BUCK_SLP_VSEL(4), RK817_BUCK_CONFIG(4), RK817_BUCK_VSEL_MASK, 0x00, },
-	{ 1500000, 100000, RK817_BUCK_ON_VSEL(4), RK817_BUCK_SLP_VSEL(4), RK817_BUCK_CONFIG(4), RK817_BUCK_VSEL_MASK, 0x50, },
-	{ 3400000,	0, RK817_BUCK_ON_VSEL(4), RK817_BUCK_SLP_VSEL(4), RK817_BUCK_CONFIG(4), RK817_BUCK_VSEL_MASK, 0x63, },
+	{  500000,  12500, RK817_BUCK_ON_VSEL(4), RK817_BUCK_SLP_VSEL(4), RK817_BUCK_CONFIG(4), RK817_BUCK_VSEL_MASK, 0x00, 0x4f, 3},
+	{ 1500000, 100000, RK817_BUCK_ON_VSEL(4), RK817_BUCK_SLP_VSEL(4), RK817_BUCK_CONFIG(4), RK817_BUCK_VSEL_MASK, 0x50, 0x62, 3},
+	{ 3400000,	0, RK817_BUCK_ON_VSEL(4), RK817_BUCK_SLP_VSEL(4), RK817_BUCK_CONFIG(4), RK817_BUCK_VSEL_MASK, 0x63, 0x63, 3},
 };
 
 static const struct rk8xx_reg_info rk818_buck[] = {
-	{ 712500,   12500, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, },
-	{ 712500,   12500, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, },
-	{ 712500,   12500, NA,		      NA,		  REG_BUCK3_CONFIG, RK818_BUCK_VSEL_MASK, },
-	{ 1800000, 100000, REG_BUCK4_ON_VSEL, REG_BUCK4_SLP_VSEL, REG_BUCK4_CONFIG, RK818_BUCK4_VSEL_MASK, },
+	{ 712500,   12500, REG_BUCK1_ON_VSEL, REG_BUCK1_SLP_VSEL, REG_BUCK1_CONFIG, RK818_BUCK_VSEL_MASK, 0x00, 0x3f, 1},
+	{ 712500,   12500, REG_BUCK2_ON_VSEL, REG_BUCK2_SLP_VSEL, REG_BUCK2_CONFIG, RK818_BUCK_VSEL_MASK, 0x00, 0x3f, 1},
+	{ NA,       NA,    NA,		      NA,		  REG_BUCK3_CONFIG, NA,                   NA,   NA,   1},
+	{ 1800000, 100000, REG_BUCK4_ON_VSEL, REG_BUCK4_SLP_VSEL, REG_BUCK4_CONFIG, RK818_BUCK4_VSEL_MASK,0x00, 0x10, 1},
 };
 
 #ifdef ENABLE_DRIVER
@@ -287,12 +291,11 @@ static int _buck_set_value(struct udevice *pmic, int buck, int uvolt)
 		val = ((uvolt - info->min_uv) / info->step_uv) + info->min_sel;
 
 	debug("%s: volt=%d, buck=%d, reg=0x%x, mask=0x%x, val=0x%x\n",
-	      __func__, uvolt, buck + 1, info->vsel_reg, mask, val);
+	      __func__, uvolt, buck+1, info->vsel_reg, mask, val);
 
 	if (priv->variant == RK816_ID) {
 		pmic_clrsetbits(pmic, info->vsel_reg, mask, val);
-		return pmic_clrsetbits(pmic, RK816_REG_DCDC_EN2,
-				       1 << 7, 1 << 7);
+		return pmic_clrsetbits(pmic, RK816_REG_DCDC_EN2, 1 << 7, 1 << 7);
 	} else {
 		return pmic_clrsetbits(pmic, info->vsel_reg, mask, val);
 	}
@@ -301,7 +304,7 @@ static int _buck_set_value(struct udevice *pmic, int buck, int uvolt)
 static int _buck_set_enable(struct udevice *pmic, int buck, bool enable)
 {
 	uint mask, value, en_reg;
-	int ret = 0;
+	int ret;
 	struct rk8xx_priv *priv = dev_get_priv(pmic);
 
 	switch (priv->variant) {
@@ -372,7 +375,7 @@ static int _buck_set_suspend_value(struct udevice *pmic, int buck, int uvolt)
 		val = ((uvolt - info->min_uv) / info->step_uv) + info->min_sel;
 
 	debug("%s: volt=%d, buck=%d, reg=0x%x, mask=0x%x, val=0x%x\n",
-	      __func__, uvolt, buck + 1, info->vsel_sleep_reg, mask, val);
+	      __func__, uvolt, buck+1, info->vsel_sleep_reg, mask, val);
 
 	return pmic_clrsetbits(pmic, info->vsel_sleep_reg, mask, val);
 }
@@ -420,9 +423,92 @@ static int _buck_get_enable(struct udevice *pmic, int buck)
 	return ret & mask ? true : false;
 }
 
+static int _buck_set_ramp_delay(struct udevice *pmic, int buck, u32 ramp_delay)
+{
+	const struct rk8xx_reg_info *info = get_buck_reg(pmic, buck, 0);
+	struct rk8xx_priv *priv = dev_get_priv(pmic);
+	u32 ramp_value, ramp_mask;
+
+	if (info->config_reg == NA)
+		return -ENOSYS;
+
+	switch (priv->variant) {
+	case RK805_ID:
+		ramp_mask = RK805_RAMP_RATE_MASK;
+		ramp_value = RK805_RAMP_RATE_12_5MV_PER_US;
+		switch (ramp_delay) {
+		case 0 ... 3000:
+			ramp_value = RK805_RAMP_RATE_3MV_PER_US;
+			break;
+		case 3001 ... 6000:
+			ramp_value = RK805_RAMP_RATE_6MV_PER_US;
+			break;
+		case 6001 ... 12500:
+			ramp_value = RK805_RAMP_RATE_12_5MV_PER_US;
+			break;
+		case 12501 ... 25000:
+			ramp_value = RK805_RAMP_RATE_25MV_PER_US;
+			break;
+		default:
+			printf("buck%d ramp_delay: %d not supported\n",
+			       buck, ramp_delay);
+		}
+		break;
+	case RK808_ID:
+	case RK816_ID:
+	case RK818_ID:
+		ramp_value = RK808_RAMP_RATE_6MV_PER_US;
+		ramp_mask = RK808_RAMP_RATE_MASK;
+		switch (ramp_delay) {
+		case 1 ... 2000:
+			ramp_value = RK808_RAMP_RATE_2MV_PER_US;
+			break;
+		case 2001 ... 4000:
+			ramp_value = RK808_RAMP_RATE_4MV_PER_US;
+			break;
+		case 4001 ... 6000:
+			ramp_value = RK808_RAMP_RATE_6MV_PER_US;
+			break;
+		case 6001 ... 10000:
+			ramp_value = RK808_RAMP_RATE_6MV_PER_US;
+			break;
+		default:
+			printf("buck%d ramp_delay: %d not supported\n",
+			       buck, ramp_delay);
+		}
+		break;
+	case RK809_ID:
+	case RK817_ID:
+		ramp_mask = RK817_RAMP_RATE_MASK;
+		ramp_value = RK817_RAMP_RATE_12_5MV_PER_US;
+		switch (ramp_delay) {
+		case 0 ... 3000:
+			ramp_value = RK817_RAMP_RATE_3MV_PER_US;
+			break;
+		case 3001 ... 6300:
+			ramp_value = RK817_RAMP_RATE_6_3MV_PER_US;
+			break;
+		case 6301 ... 12500:
+			ramp_value = RK817_RAMP_RATE_12_5MV_PER_US;
+			break;
+		case 12501 ... 25000:
+			ramp_value = RK817_RAMP_RATE_12_5MV_PER_US;
+			break;
+		default:
+			printf("buck%d ramp_delay: %d not supported\n",
+			       buck, ramp_delay);
+		}
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return pmic_clrsetbits(pmic, info->config_reg, ramp_mask, ramp_value);
+}
+
 static int _buck_set_suspend_enable(struct udevice *pmic, int buck, bool enable)
 {
-	uint mask = 0;
+	uint mask;
 	int ret;
 	struct rk8xx_priv *priv = dev_get_priv(pmic);
 
@@ -459,7 +545,7 @@ static int _buck_get_suspend_enable(struct udevice *pmic, int buck)
 {
 	struct rk8xx_priv *priv = dev_get_priv(pmic);
 	int ret, val;
-	uint mask = 0;
+	uint mask;
 
 	switch (priv->variant) {
 	case RK805_ID:
@@ -701,10 +787,9 @@ static int _ldo_get_suspend_enable(struct udevice *pmic, int ldo)
 static int buck_get_value(struct udevice *dev)
 {
 	int buck = dev->driver_data - 1;
-	/* We assume level-1 voltage is enough for usage in U-Boot */
 	const struct rk8xx_reg_info *info = get_buck_reg(dev->parent, buck, 0);
 	int mask = info->vsel_mask;
-	int ret, val;
+	int i, ret, val;
 
 	if (info->vsel_reg == NA)
 		return -ENOSYS;
@@ -712,9 +797,20 @@ static int buck_get_value(struct udevice *dev)
 	ret = pmic_reg_read(dev->parent, info->vsel_reg);
 	if (ret < 0)
 		return ret;
-	val = ret & mask;
 
-	return info->min_uv + val * info->step_uv;
+	val = ret & mask;
+	if (val >= info->min_sel && val <= info->max_sel)
+		goto finish;
+
+	/* unlucky to try */
+	for (i = 1; i < info->range_num; i++) {
+		info++;
+		if (val <= info->max_sel && val >= info->min_sel)
+			break;
+	}
+
+finish:
+	return info->min_uv + (val - info->min_sel) * info->step_uv;
 }
 
 static int buck_set_value(struct udevice *dev, int uvolt)
@@ -727,10 +823,9 @@ static int buck_set_value(struct udevice *dev, int uvolt)
 static int buck_get_suspend_value(struct udevice *dev)
 {
 	int buck = dev->driver_data - 1;
-	/* We assume level-1 voltage is enough for usage in U-Boot */
 	const struct rk8xx_reg_info *info = get_buck_reg(dev->parent, buck, 0);
 	int mask = info->vsel_mask;
-	int ret, val;
+	int i, ret, val;
 
 	if (info->vsel_sleep_reg == NA)
 		return -ENOSYS;
@@ -740,8 +835,18 @@ static int buck_get_suspend_value(struct udevice *dev)
 		return ret;
 
 	val = ret & mask;
+	if (val <= info->max_sel && val >= info->min_sel)
+		goto finish;
 
-	return info->min_uv + val * info->step_uv;
+	/* unlucky to try */
+	for (i = 1; i < info->range_num; i++) {
+		info++;
+		if (val <= info->max_sel && val >= info->min_sel)
+			break;
+	}
+
+finish:
+	return info->min_uv + (val - info->min_sel) * info->step_uv;
 }
 
 static int buck_set_suspend_value(struct udevice *dev, int uvolt)
@@ -770,6 +875,13 @@ static int buck_get_suspend_enable(struct udevice *dev)
 	int buck = dev->driver_data - 1;
 
 	return _buck_get_suspend_enable(dev->parent, buck);
+}
+
+static int buck_set_ramp_delay(struct udevice *dev, u32 ramp_delay)
+{
+	int buck = dev->driver_data - 1;
+
+	return _buck_set_ramp_delay(dev->parent, buck, ramp_delay);
 }
 
 static int buck_get_enable(struct udevice *dev)
@@ -812,7 +924,7 @@ static int ldo_set_value(struct udevice *dev, int uvolt)
 		val = ((uvolt - info->min_uv) / info->step_uv) + info->min_sel;
 
 	debug("%s: volt=%d, ldo=%d, reg=0x%x, mask=0x%x, val=0x%x\n",
-	      __func__, uvolt, ldo + 1, info->vsel_reg, mask, val);
+	      __func__, uvolt, ldo+1, info->vsel_reg, mask, val);
 
 	return pmic_clrsetbits(dev->parent, info->vsel_reg, mask, val);
 }
@@ -833,7 +945,7 @@ static int ldo_set_suspend_value(struct udevice *dev, int uvolt)
 		val = ((uvolt - info->min_uv) / info->step_uv) + info->min_sel;
 
 	debug("%s: volt=%d, ldo=%d, reg=0x%x, mask=0x%x, val=0x%x\n",
-	      __func__, uvolt, ldo + 1, info->vsel_sleep_reg, mask, val);
+	      __func__, uvolt, ldo+1, info->vsel_sleep_reg, mask, val);
 
 	return pmic_clrsetbits(dev->parent, info->vsel_sleep_reg, mask, val);
 }
@@ -1023,6 +1135,23 @@ static int switch_get_suspend_enable(struct udevice *dev)
  */
 static int switch_get_value(struct udevice *dev)
 {
+	const char *supply_name[] = { "vcc9-supply", "vcc8-supply", };
+	struct rk8xx_priv *priv = dev_get_priv(dev->parent);
+	struct udevice *supply;
+	int id = dev->driver_data - 1;
+
+	if (!switch_get_enable(dev))
+		return 0;
+
+	/* note: rk817 only contains switch0 */
+	if ((priv->variant == RK809_ID) || (priv->variant == RK817_ID)) {
+		if (!uclass_get_device_by_phandle(UCLASS_REGULATOR,
+						  dev_get_parent(dev),
+						  supply_name[id],
+						  &supply))
+			return regulator_get_value(supply);
+	}
+
 	return 0;
 }
 
@@ -1076,6 +1205,7 @@ static const struct dm_regulator_ops rk8xx_buck_ops = {
 	.set_enable = buck_set_enable,
 	.set_suspend_enable = buck_set_suspend_enable,
 	.get_suspend_enable = buck_get_suspend_enable,
+	.set_ramp_delay = buck_set_ramp_delay,
 };
 
 static const struct dm_regulator_ops rk8xx_ldo_ops = {

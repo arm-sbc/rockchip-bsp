@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
  * Layerscape PCIe driver
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -129,28 +130,19 @@ static void fdt_pcie_set_iommu_map_entry(void *blob, struct ls_pcie *pcie,
 	u32 iommu_map[4];
 	int nodeoffset;
 	int lenp;
-	uint svr;
-	char *compat = NULL;
 
 	/* find pci controller node */
 	nodeoffset = fdt_node_offset_by_compat_reg(blob, "fsl,ls-pcie",
 						   pcie->dbi_res.start);
 	if (nodeoffset < 0) {
 #ifdef CONFIG_FSL_PCIE_COMPAT /* Compatible with older version of dts node */
-		svr = (get_svr() >> SVR_VAR_PER_SHIFT) & 0xFFFFFE;
-		if (svr == SVR_LS2088A || svr == SVR_LS2084A ||
-		    svr == SVR_LS2048A || svr == SVR_LS2044A ||
-		    svr == SVR_LS2081A || svr == SVR_LS2041A)
-			compat = "fsl,ls2088a-pcie";
-		else
-			compat = CONFIG_FSL_PCIE_COMPAT;
-
-		if (compat)
-			nodeoffset = fdt_node_offset_by_compat_reg(blob,
-						compat, pcie->dbi_res.start);
-#endif
+		nodeoffset = fdt_node_offset_by_compat_reg(blob,
+				CONFIG_FSL_PCIE_COMPAT, pcie->dbi_res.start);
 		if (nodeoffset < 0)
 			return;
+#else
+		return;
+#endif
 	}
 
 	/* get phandle to iommu controller */
@@ -218,7 +210,7 @@ static void fdt_fixup_pcie(void *blob)
 }
 #endif
 
-static void ft_pcie_rc_fix(void *blob, struct ls_pcie *pcie)
+static void ft_pcie_ls_setup(void *blob, struct ls_pcie *pcie)
 {
 	int off;
 	uint svr;
@@ -243,31 +235,10 @@ static void ft_pcie_rc_fix(void *blob, struct ls_pcie *pcie)
 			return;
 	}
 
-	if (pcie->enabled && pcie->mode == PCI_HEADER_TYPE_BRIDGE)
+	if (pcie->enabled)
 		fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
 	else
 		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED, 0);
-}
-
-static void ft_pcie_ep_fix(void *blob, struct ls_pcie *pcie)
-{
-	int off;
-
-	off = fdt_node_offset_by_compat_reg(blob, "fsl,ls-pcie-ep",
-					    pcie->dbi_res.start);
-	if (off < 0)
-		return;
-
-	if (pcie->enabled && pcie->mode == PCI_HEADER_TYPE_NORMAL)
-		fdt_set_node_status(blob, off, FDT_STATUS_OKAY, 0);
-	else
-		fdt_set_node_status(blob, off, FDT_STATUS_DISABLED, 0);
-}
-
-static void ft_pcie_ls_setup(void *blob, struct ls_pcie *pcie)
-{
-	ft_pcie_ep_fix(blob, pcie);
-	ft_pcie_rc_fix(blob, pcie);
 }
 
 /* Fixup Kernel DT for PCIe */

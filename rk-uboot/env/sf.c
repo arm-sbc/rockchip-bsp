@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000-2010
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
@@ -7,11 +6,12 @@
  * Andreas Heppel <aheppel@sysgo.de>
  *
  * (C) Copyright 2008 Atmel Corporation
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <dm.h>
-#include <env.h>
-#include <env_internal.h>
+#include <environment.h>
 #include <malloc.h>
 #include <spi.h>
 #include <spi_flash.h>
@@ -19,9 +19,21 @@
 #include <errno.h>
 #include <dm/device-internal.h>
 
+#ifndef CONFIG_ENV_SPI_BUS
+# define CONFIG_ENV_SPI_BUS	CONFIG_SF_DEFAULT_BUS
+#endif
+#ifndef CONFIG_ENV_SPI_CS
+# define CONFIG_ENV_SPI_CS	CONFIG_SF_DEFAULT_CS
+#endif
+#ifndef CONFIG_ENV_SPI_MAX_HZ
+# define CONFIG_ENV_SPI_MAX_HZ	CONFIG_SF_DEFAULT_SPEED
+#endif
+#ifndef CONFIG_ENV_SPI_MODE
+# define CONFIG_ENV_SPI_MODE	CONFIG_SF_DEFAULT_MODE
+#endif
+
 #ifndef CONFIG_SPL_BUILD
 #define CMD_SAVEENV
-#define INITENV
 #endif
 
 #ifdef CONFIG_ENV_OFFSET_REDUND
@@ -30,6 +42,8 @@ static ulong env_offset		= CONFIG_ENV_OFFSET;
 static ulong env_new_offset	= CONFIG_ENV_OFFSET_REDUND;
 #endif
 
+#define ACTIVE_FLAG	1
+#define OBSOLETE_FLAG	0
 #endif /* CONFIG_ENV_OFFSET_REDUND */
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -44,10 +58,9 @@ static int setup_flash_device(void)
 
 	/* speed and mode will be read from DT */
 	ret = spi_flash_probe_bus_cs(CONFIG_ENV_SPI_BUS, CONFIG_ENV_SPI_CS,
-				     CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE,
-				     &new);
+				     0, 0, &new);
 	if (ret) {
-		env_set_default("spi_flash_probe_bus_cs() failed", 0);
+		set_default_env("!spi_flash_probe_bus_cs() failed");
 		return ret;
 	}
 
@@ -59,7 +72,7 @@ static int setup_flash_device(void)
 			CONFIG_ENV_SPI_CS,
 			CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE);
 		if (!env_flash) {
-			env_set_default("spi_flash_probe() failed", 0);
+			set_default_env("!spi_flash_probe() failed");
 			return -EIO;
 		}
 	}
@@ -72,7 +85,7 @@ static int setup_flash_device(void)
 static int env_sf_save(void)
 {
 	env_t	env_new;
-	char	*saved_buffer = NULL, flag = ENV_REDUND_OBSOLETE;
+	char	*saved_buffer = NULL, flag = OBSOLETE_FLAG;
 	u32	saved_size, saved_offset, sector;
 	int	ret;
 
@@ -83,7 +96,7 @@ static int env_sf_save(void)
 	ret = env_export(&env_new);
 	if (ret)
 		return -EIO;
-	env_new.flags	= ENV_REDUND_ACTIVE;
+	env_new.flags	= ACTIVE_FLAG;
 
 	if (gd->env_valid == ENV_VALID) {
 		env_new_offset = CONFIG_ENV_OFFSET_REDUND;
@@ -152,15 +165,17 @@ static int env_sf_save(void)
 static int env_sf_load(void)
 {
 	int ret;
-	int read1_fail, read2_fail;
-	env_t *tmp_env1, *tmp_env2;
+	int crc1_ok = 0, crc2_ok = 0;
+	env_t *tmp_env1 = NULL;
+	env_t *tmp_env2 = NULL;
+	env_t *ep = NULL;
 
 	tmp_env1 = (env_t *)memalign(ARCH_DMA_MINALIGN,
 			CONFIG_ENV_SIZE);
 	tmp_env2 = (env_t *)memalign(ARCH_DMA_MINALIGN,
 			CONFIG_ENV_SIZE);
 	if (!tmp_env1 || !tmp_env2) {
-		env_set_default("malloc() failed", 0);
+		set_default_env("!malloc() failed");
 		ret = -EIO;
 		goto out;
 	}
@@ -169,14 +184,63 @@ static int env_sf_load(void)
 	if (ret)
 		goto out;
 
-	read1_fail = spi_flash_read(env_flash, CONFIG_ENV_OFFSET,
-				    CONFIG_ENV_SIZE, tmp_env1);
-	read2_fail = spi_flash_read(env_flash, CONFIG_ENV_OFFSET_REDUND,
-				    CONFIG_ENV_SIZE, tmp_env2);
+	ret = spi_flash_read(env_flash, CONFIG_ENV_OFFSET,
+				CONFIG_ENV_SIZE, tmp_env1);
+	if (ret) {
+		set_default_env("!spi_flash_read() failed");
+		goto err_read;
+	}
 
-	ret = env_import_redund((char *)tmp_env1, read1_fail, (char *)tmp_env2,
-				read2_fail);
+	if (crc32(0, tmp_env1->data, ENV_SIZE) == tmp_env1->crc)
+		crc1_ok = 1;
 
+	ret = spi_flash_read(env_flash, CONFIG_ENV_OFFSET_REDUND,
+				CONFIG_ENV_SIZE, tmp_env2);
+	if (!ret) {
+		if (crc32(0, tmp_env2->data, ENV_SIZE) == tmp_env2->crc)
+			crc2_ok = 1;
+	}
+
+	if (!crc1_ok && !crc2_ok) {
+		set_default_env("!bad CRC");
+		ret = -EIO;
+		goto err_read;
+	} else if (crc1_ok && !crc2_ok) {
+		gd->env_valid = ENV_VALID;
+	} else if (!crc1_ok && crc2_ok) {
+		gd->env_valid = ENV_REDUND;
+	} else if (tmp_env1->flags == ACTIVE_FLAG &&
+		   tmp_env2->flags == OBSOLETE_FLAG) {
+		gd->env_valid = ENV_VALID;
+	} else if (tmp_env1->flags == OBSOLETE_FLAG &&
+		   tmp_env2->flags == ACTIVE_FLAG) {
+		gd->env_valid = ENV_REDUND;
+	} else if (tmp_env1->flags == tmp_env2->flags) {
+		gd->env_valid = ENV_VALID;
+	} else if (tmp_env1->flags == 0xFF) {
+		gd->env_valid = ENV_VALID;
+	} else if (tmp_env2->flags == 0xFF) {
+		gd->env_valid = ENV_REDUND;
+	} else {
+		/*
+		 * this differs from code in env_flash.c, but I think a sane
+		 * default path is desirable.
+		 */
+		gd->env_valid = ENV_VALID;
+	}
+
+	if (gd->env_valid == ENV_VALID)
+		ep = tmp_env1;
+	else
+		ep = tmp_env2;
+
+	ret = env_import((char *)ep, 0);
+	if (!ret) {
+		pr_err("Cannot import environment: errno = %d\n", errno);
+		set_default_env("!env_import failed");
+	}
+
+err_read:
 	spi_flash_free(env_flash);
 	env_flash = NULL;
 out:
@@ -255,7 +319,7 @@ static int env_sf_load(void)
 
 	buf = (char *)memalign(ARCH_DMA_MINALIGN, CONFIG_ENV_SIZE);
 	if (!buf) {
-		env_set_default("malloc() failed", 0);
+		set_default_env("!malloc() failed");
 		return -EIO;
 	}
 
@@ -266,12 +330,12 @@ static int env_sf_load(void)
 	ret = spi_flash_read(env_flash,
 		CONFIG_ENV_OFFSET, CONFIG_ENV_SIZE, buf);
 	if (ret) {
-		env_set_default("spi_flash_read() failed", 0);
+		set_default_env("!spi_flash_read() failed");
 		goto err_read;
 	}
 
 	ret = env_import(buf, 1);
-	if (!ret)
+	if (ret)
 		gd->env_valid = ENV_VALID;
 
 err_read:
@@ -284,38 +348,11 @@ out:
 }
 #endif
 
-#ifdef CONFIG_ENV_ADDR
-__weak void *env_sf_get_env_addr(void)
-{
-	return (void *)CONFIG_ENV_ADDR;
-}
-#endif
-
-#if defined(INITENV) && defined(CONFIG_ENV_ADDR)
-static int env_sf_init(void)
-{
-	env_t *env_ptr = (env_t *)env_sf_get_env_addr();
-
-	if (crc32(0, env_ptr->data, ENV_SIZE) == env_ptr->crc) {
-		gd->env_addr	= (ulong)&(env_ptr->data);
-		gd->env_valid	= 1;
-	} else {
-		gd->env_addr = (ulong)&default_environment[0];
-		gd->env_valid = 1;
-	}
-
-	return 0;
-}
-#endif
-
 U_BOOT_ENV_LOCATION(sf) = {
 	.location	= ENVL_SPI_FLASH,
 	ENV_NAME("SPI Flash")
 	.load		= env_sf_load,
 #ifdef CMD_SAVEENV
 	.save		= env_save_ptr(env_sf_save),
-#endif
-#if defined(INITENV) && defined(CONFIG_ENV_ADDR)
-	.init		= env_sf_init,
 #endif
 };

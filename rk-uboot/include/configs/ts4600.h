@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2016 Savoir-faire Linux Inc.
  *
@@ -9,13 +8,19 @@
  *   Freescale Semiconductor, Inc.
  *
  * Configuration settings for the TS4600 Board
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #ifndef __CONFIGS_TS4600_H__
 #define __CONFIGS_TS4600_H__
 
+/* System configurations */
+#define CONFIG_MX28				/* i.MX28 SoC */
+
 /* U-Boot Commands */
 
 /* Memory configuration */
+#define CONFIG_NR_DRAM_BANKS		1		/* 1 bank of DRAM */
 #define PHYS_SDRAM_1			0x40000000	/* Base address */
 #define PHYS_SDRAM_1_SIZE		0x40000000	/* Max 1 GB RAM */
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM_1

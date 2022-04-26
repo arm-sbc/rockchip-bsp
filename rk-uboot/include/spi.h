@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Common SPI Interface: Controller-specific definitions
  *
  * (C) Copyright 2001
  * Gerald Van Baren, Custom IDEAS, vanbaren@cideas.com.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _SPI_H_
@@ -30,6 +31,7 @@
 #define SPI_RX_SLOW	BIT(11)			/* receive with 1 wire slow */
 #define SPI_RX_DUAL	BIT(12)			/* receive with 2 wires */
 #define SPI_RX_QUAD	BIT(13)			/* receive with 4 wires */
+#define SPI_DMA_PREPARE	BIT(24)			/* dma transfer skip waiting idle */
 
 /* Header byte that marks the start of the message */
 #define SPI_PREAMBLE_END_BYTE	0xec
@@ -108,6 +110,7 @@ struct spi_slave {
 	unsigned int max_read_size;
 	unsigned int max_write_size;
 	void *memory_map;
+	u8 option;
 
 	u8 flags;
 #define SPI_XFER_BEGIN		BIT(0)	/* Assert CS before transfer */
@@ -115,7 +118,15 @@ struct spi_slave {
 #define SPI_XFER_ONCE		(SPI_XFER_BEGIN | SPI_XFER_END)
 #define SPI_XFER_MMAP		BIT(2)	/* Memory Mapped start */
 #define SPI_XFER_MMAP_END	BIT(3)	/* Memory Mapped End */
+#define SPI_XFER_PREPARE	BIT(7)	/* Transfer skip waiting idle */
 };
+
+/**
+ * Initialization, must be called once on start up.
+ *
+ * TODO: I don't think we really need this.
+ */
+void spi_init(void);
 
 /**
  * spi_do_alloc_slave - Allocate a new SPI slave (internal)
@@ -247,26 +258,6 @@ int spi_set_wordlen(struct spi_slave *slave, unsigned int wordlen);
  */
 int  spi_xfer(struct spi_slave *slave, unsigned int bitlen, const void *dout,
 		void *din, unsigned long flags);
-
-/**
- * spi_write_then_read - SPI synchronous write followed by read
- *
- * This performs a half duplex transaction in which the first transaction
- * is to send the opcode and if the length of buf is non-zero then it start
- * the second transaction as tx or rx based on the need from respective slave.
- *
- * @slave:	The SPI slave device with which opcode/data will be exchanged
- * @opcode:	opcode used for specific transfer
- * @n_opcode:	size of opcode, in bytes
- * @txbuf:	buffer into which data to be written
- * @rxbuf:	buffer into which data will be read
- * @n_buf:	size of buf (whether it's [tx|rx]buf), in bytes
- *
- * Returns: 0 on success, not 0 on failure
- */
-int spi_write_then_read(struct spi_slave *slave, const u8 *opcode,
-			size_t n_opcode, const u8 *txbuf, u8 *rxbuf,
-			size_t n_buf);
 
 /* Copy memory mapped data */
 void spi_flash_copy_mmap(void *data, void *offset, size_t len);

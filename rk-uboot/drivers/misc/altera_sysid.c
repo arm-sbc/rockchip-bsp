@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2004, Psyent Corporation <www.psyent.com>
  * Scott McNutt <smcnutt@psyent.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -35,7 +36,7 @@ void display_sysid(void)
 	if (ret)
 		return;
 	ret = misc_read(dev, 0, &sysid, sizeof(sysid));
-	if (ret < 0)
+	if (ret)
 		return;
 
 	stamp = sysid[1];

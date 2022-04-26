@@ -15,11 +15,6 @@ config SYS_NAND_DRIVER_ECC_LAYOUT
 	  Omit standard ECC layouts to safe space. Select this if your driver
 	  is known to provide its own ECC layout.
 
-config SYS_NAND_USE_FLASH_BBT
-	bool "Enable BBT (Bad Block Table) support"
-	help
-	  Enable the BBT (Bad Block Table) usage.
-
 config NAND_ATMEL
 	bool "Support Atmel NAND controller"
 	imply SYS_NAND_USE_FLASH_BBT
@@ -269,6 +264,29 @@ config NAND_MXS_USE_MINIMUM_ECC
 	bool "Use minimum ECC strength supported by the controller"
 	default false
 
+endif
+
+config NAND_ROCKCHIP
+	bool "Support for NAND on Rockchip SoCs"
+	select SYS_NAND_SELF_INIT
+	default n
+	help
+	  Enable support for Rockchip nand.
+
+config NAND_ROCKCHIP_V9
+	bool "Support for NAND V9 on Rockchip SoCs"
+	select SYS_NAND_SELF_INIT
+	default n
+	help
+	  Enable support for Rockchip nand v9.
+
+if NAND_ROCKCHIP || NAND_ROCKCHIP_V9
+config NAND_ROCKCHIP_DT
+	bool "Support Rockchip NAND controller as a DT device"
+	default y
+	help
+	  Enable the driver for Rockchip NAND flash on platforms
+	  using device tree.
 endif
 
 config NAND_ZYNQ

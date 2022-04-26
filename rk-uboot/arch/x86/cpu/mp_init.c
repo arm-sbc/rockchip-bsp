@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Based on code from the coreboot file of the same name
  */
@@ -322,7 +323,7 @@ static int start_aps(int ap_count, atomic_t *num_aps)
 	if (sipi_vector > max_vector_loc) {
 		printf("SIPI vector too large! 0x%08x\n",
 		       sipi_vector);
-		return -ENOSPC;
+		return -1;
 	}
 
 	debug("Attempting to start %d APs\n", ap_count);
@@ -364,7 +365,7 @@ static int start_aps(int ap_count, atomic_t *num_aps)
 	if (wait_for_aps(num_aps, ap_count, 10000, 50)) {
 		debug("Not all APs checked in: %d/%d\n",
 		      atomic_read(num_aps), ap_count);
-		return -EIO;
+		return -1;
 	}
 
 	return 0;
@@ -387,7 +388,7 @@ static int bsp_do_flight_plan(struct udevice *cpu, struct mp_params *mp_params)
 			if (wait_for_aps(&rec->cpus_entered, num_aps,
 					 timeout_us, step_us)) {
 				debug("MP record %d timeout\n", i);
-				ret = -ETIMEDOUT;
+				ret = -1;
 			}
 		}
 
@@ -508,7 +509,7 @@ int mp_init(struct mp_params *p)
 
 	if (p == NULL || p->flight_plan == NULL || p->num_records < 1) {
 		printf("Invalid MP parameters\n");
-		return -EINVAL;
+		return -1;
 	}
 
 	num_cpus = cpu_get_count(cpu);
@@ -531,7 +532,7 @@ int mp_init(struct mp_params *p)
 	/* Load the SIPI vector */
 	ret = load_sipi_vector(&ap_count, num_cpus);
 	if (ap_count == NULL)
-		return -ENOENT;
+		return -1;
 
 	/*
 	 * Make sure SIPI data hits RAM so the APs that come up will see

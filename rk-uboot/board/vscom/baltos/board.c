@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * board.c
  *
  * Board functions for TI AM335X based boards
  *
  * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <env.h>
 #include <errno.h>
 #include <linux/libfdt.h>
 #include <spl.h>
@@ -28,13 +28,16 @@
 #include <i2c.h>
 #include <miiphy.h>
 #include <cpsw.h>
+#include <power/tps65217.h>
 #include <power/tps65910.h>
+#include <environment.h>
 #include <watchdog.h>
 #include "board.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
-/* GPIO that controls DIP switch and mPCIe slot */
+/* GPIO that controls power to DDR on EVM-SK */
+#define GPIO_DDR_VTT_EN		7
 #define DIP_S1			44
 #define MPCIE_SW		100
 
@@ -246,6 +249,9 @@ const struct ctrl_ioregs ioregs_baltos = {
 
 void sdram_init(void)
 {
+	gpio_request(GPIO_DDR_VTT_EN, "ddr_vtt_en");
+	gpio_direction_output(GPIO_DDR_VTT_EN, 1);
+
 	config_ddr(400, &ioregs_baltos,
 		   &ddr3_baltos_data,
 		   &ddr3_baltos_cmd_ctrl_data,
@@ -288,15 +294,15 @@ int ft_board_setup(void *blob, bd_t *bd)
 	mac_addr[5] = header.MAC1[5];
 
 
-	node = fdt_path_offset(blob, "ethernet0");
+	node = fdt_path_offset(blob, "/ocp/ethernet/slave@4a100200");
 	if (node < 0) {
-		printf("no ethernet0 path offset\n");
+		printf("no /soc/fman/ethernet path offset\n");
 		return -ENODEV;
 	}
 
 	ret = fdt_setprop(blob, node, "mac-address", &mac_addr, 6);
 	if (ret) {
-		printf("error setting mac-address property\n");
+		printf("error setting local-mac-address property\n");
 		return -ENODEV;
 	}
 
@@ -308,15 +314,15 @@ int ft_board_setup(void *blob, bd_t *bd)
 	mac_addr[4] = header.MAC2[4];
 	mac_addr[5] = header.MAC2[5];
 
-	node = fdt_path_offset(blob, "ethernet1");
+	node = fdt_path_offset(blob, "/ocp/ethernet/slave@4a100300");
 	if (node < 0) {
-		printf("no ethernet1 path offset\n");
+		printf("no /soc/fman/ethernet path offset\n");
 		return -ENODEV;
 	}
 
 	ret = fdt_setprop(blob, node, "mac-address", &mac_addr, 6);
 	if (ret) {
-		printf("error setting mac-address property\n");
+		printf("error setting local-mac-address property\n");
 		return -ENODEV;
 	}
 
@@ -417,7 +423,7 @@ static struct cpsw_platform_data cpsw_data = {
 };
 #endif
 
-#if ((defined(CONFIG_SPL_ETH_SUPPORT) || defined(CONFIG_SPL_USB_ETHER)) \
+#if ((defined(CONFIG_SPL_ETH_SUPPORT) || defined(CONFIG_SPL_USBETH_SUPPORT)) \
 		&& defined(CONFIG_SPL_BUILD)) || \
 	((defined(CONFIG_DRIVER_TI_CPSW) || \
 	  defined(CONFIG_USB_ETHER) && defined(CONFIG_USB_MUSB_GADGET)) && \

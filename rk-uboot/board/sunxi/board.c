@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2012-2013 Henrik Nordstrom <henrik@henriknordstrom.net>
  * (C) Copyright 2013 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
@@ -8,15 +7,13 @@
  * Tom Cubie <tangliang@allwinnertech.com>
  *
  * Some board init for the Allwinner A10-evb board.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <dm.h>
-#include <env.h>
 #include <mmc.h>
 #include <axp_pmic.h>
-#include <generic-phy.h>
-#include <phy-sun4i-usb.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/display.h>
@@ -24,17 +21,17 @@
 #include <asm/arch/gpio.h>
 #include <asm/arch/mmc.h>
 #include <asm/arch/spl.h>
+#include <asm/arch/usb_phy.h>
 #ifndef CONFIG_ARM64
 #include <asm/armv7.h>
 #endif
 #include <asm/gpio.h>
 #include <asm/io.h>
-#include <u-boot/crc.h>
-#include <env_internal.h>
+#include <crc.h>
+#include <environment.h>
 #include <linux/libfdt.h>
 #include <nand.h>
 #include <net.h>
-#include <spl.h>
 #include <sy8106a.h>
 #include <asm/setup.h>
 
@@ -99,10 +96,6 @@ void i2c_init_board(void)
 	sunxi_gpio_set_cfgpin(SUNXI_GPH(2), SUN8I_GPH_TWI0);
 	sunxi_gpio_set_cfgpin(SUNXI_GPH(3), SUN8I_GPH_TWI0);
 	clock_twi_onoff(0, 1);
-#elif defined(CONFIG_MACH_SUN50I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(0), SUN50I_GPH_TWI0);
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(1), SUN50I_GPH_TWI0);
-	clock_twi_onoff(0, 1);
 #endif
 #endif
 
@@ -125,10 +118,6 @@ void i2c_init_board(void)
 	sunxi_gpio_set_cfgpin(SUNXI_GPH(4), SUN8I_GPH_TWI1);
 	sunxi_gpio_set_cfgpin(SUNXI_GPH(5), SUN8I_GPH_TWI1);
 	clock_twi_onoff(1, 1);
-#elif defined(CONFIG_MACH_SUN50I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(2), SUN50I_GPH_TWI1);
-	sunxi_gpio_set_cfgpin(SUNXI_GPH(3), SUN50I_GPH_TWI1);
-	clock_twi_onoff(1, 1);
 #endif
 #endif
 
@@ -150,10 +139,6 @@ void i2c_init_board(void)
 #elif defined(CONFIG_MACH_SUN8I)
 	sunxi_gpio_set_cfgpin(SUNXI_GPE(12), SUN8I_GPE_TWI2);
 	sunxi_gpio_set_cfgpin(SUNXI_GPE(13), SUN8I_GPE_TWI2);
-	clock_twi_onoff(2, 1);
-#elif defined(CONFIG_MACH_SUN50I)
-	sunxi_gpio_set_cfgpin(SUNXI_GPE(14), SUN50I_GPE_TWI2);
-	sunxi_gpio_set_cfgpin(SUNXI_GPE(15), SUN50I_GPE_TWI2);
 	clock_twi_onoff(2, 1);
 #endif
 #endif
@@ -181,37 +166,11 @@ void i2c_init_board(void)
 #endif
 
 #ifdef CONFIG_R_I2C_ENABLE
-#ifdef CONFIG_MACH_SUN50I
-	clock_twi_onoff(5, 1);
-	sunxi_gpio_set_cfgpin(SUNXI_GPL(8), SUN50I_GPL_R_TWI);
-	sunxi_gpio_set_cfgpin(SUNXI_GPL(9), SUN50I_GPL_R_TWI);
-#else
 	clock_twi_onoff(5, 1);
 	sunxi_gpio_set_cfgpin(SUNXI_GPL(0), SUN8I_H3_GPL_R_TWI);
 	sunxi_gpio_set_cfgpin(SUNXI_GPL(1), SUN8I_H3_GPL_R_TWI);
 #endif
-#endif
 }
-
-#if defined(CONFIG_ENV_IS_IN_MMC) && defined(CONFIG_ENV_IS_IN_FAT)
-enum env_location env_get_location(enum env_operation op, int prio)
-{
-	switch (prio) {
-	case 0:
-		return ENVL_FAT;
-
-	case 1:
-		return ENVL_MMC;
-
-	default:
-		return ENVL_UNKNOWN;
-	}
-}
-#endif
-
-#ifdef CONFIG_DM_MMC
-static void mmc_pinmux_setup(int sdc);
-#endif
 
 /* add board specific code here */
 int board_init(void)
@@ -257,8 +216,6 @@ int board_init(void)
 	satapwr_pin = sunxi_name_to_gpio(CONFIG_SATAPWR);
 	gpio_request(satapwr_pin, "satapwr");
 	gpio_direction_output(satapwr_pin, 1);
-	/* Give attached sata device time to power-up to avoid link timeouts */
-	mdelay(500);
 #endif
 #ifdef CONFIG_MACPWR
 	macpwr_pin = sunxi_name_to_gpio(CONFIG_MACPWR);
@@ -274,57 +231,13 @@ int board_init(void)
 	i2c_init_board();
 #endif
 
-#ifdef CONFIG_DM_MMC
-	/*
-	 * Temporary workaround for enabling MMC clocks until a sunxi DM
-	 * pinctrl driver lands.
-	 */
-	mmc_pinmux_setup(CONFIG_MMC_SUNXI_SLOT);
-#if CONFIG_MMC_SUNXI_SLOT_EXTRA != -1
-	mmc_pinmux_setup(CONFIG_MMC_SUNXI_SLOT_EXTRA);
-#endif
-#endif	/* CONFIG_DM_MMC */
-
 	/* Uses dm gpio code so do this here and not in i2c_init_board() */
 	return soft_i2c_board_init();
 }
 
-/*
- * On older SoCs the SPL is actually at address zero, so using NULL as
- * an error value does not work.
- */
-#define INVALID_SPL_HEADER ((void *)~0UL)
-
-static struct boot_file_head * get_spl_header(uint8_t req_version)
-{
-	struct boot_file_head *spl = (void *)(ulong)SPL_ADDR;
-	uint8_t spl_header_version = spl->spl_signature[3];
-
-	/* Is there really the SPL header (still) there? */
-	if (memcmp(spl->spl_signature, SPL_SIGNATURE, 3) != 0)
-		return INVALID_SPL_HEADER;
-
-	if (spl_header_version < req_version) {
-		printf("sunxi SPL version mismatch: expected %u, got %u\n",
-		       req_version, spl_header_version);
-		return INVALID_SPL_HEADER;
-	}
-
-	return spl;
-}
-
 int dram_init(void)
 {
-	struct boot_file_head *spl = get_spl_header(SPL_DRAM_HEADER_VERSION);
-
-	if (spl == INVALID_SPL_HEADER)
-		gd->ram_size = get_ram_size((long *)PHYS_SDRAM_0,
-					    PHYS_SDRAM_0_SIZE);
-	else
-		gd->ram_size = (phys_addr_t)spl->dram_size << 20;
-
-	if (gd->ram_size > CONFIG_SUNXI_DRAM_MAX_SIZE)
-		gd->ram_size = CONFIG_SUNXI_DRAM_MAX_SIZE;
+	gd->ram_size = get_ram_size((long *)PHYS_SDRAM_0, PHYS_SDRAM_0_SIZE);
 
 	return 0;
 }
@@ -354,9 +267,10 @@ static void nand_clock_setup(void)
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 
 	setbits_le32(&ccm->ahb_gate0, (CLK_GATE_OPEN << AHB_GATE_OFFSET_NAND0));
-#if defined CONFIG_MACH_SUN6I || defined CONFIG_MACH_SUN8I || \
-    defined CONFIG_MACH_SUN9I || defined CONFIG_MACH_SUN50I
-	setbits_le32(&ccm->ahb_reset0_cfg, (1 << AHB_GATE_OFFSET_NAND0));
+#ifdef CONFIG_MACH_SUN9I
+	setbits_le32(&ccm->ahb_gate1, (1 << AHB_GATE_OFFSET_DMA));
+#else
+	setbits_le32(&ccm->ahb_gate0, (1 << AHB_GATE_OFFSET_DMA));
 #endif
 	setbits_le32(&ccm->nand0_clk_cfg, CCM_NAND_CTRL_ENABLE | AHB_DIV_1);
 }
@@ -510,13 +424,6 @@ static void mmc_pinmux_setup(int sdc)
 			sunxi_gpio_set_pull(pin, SUNXI_GPIO_PULL_UP);
 			sunxi_gpio_set_drv(pin, 2);
 		}
-#elif defined(CONFIG_MACH_SUN50I_H6)
-		/* SDC2: PC4-PC14 */
-		for (pin = SUNXI_GPC(4); pin <= SUNXI_GPC(14); pin++) {
-			sunxi_gpio_set_cfgpin(pin, SUNXI_GPC_SDC2);
-			sunxi_gpio_set_pull(pin, SUNXI_GPIO_PULL_UP);
-			sunxi_gpio_set_drv(pin, 2);
-		}
 #elif defined(CONFIG_MACH_SUN9I)
 		/* SDC2: PC6-PC16 */
 		for (pin = SUNXI_GPC(6); pin <= SUNXI_GPC(16); pin++) {
@@ -570,6 +477,7 @@ static void mmc_pinmux_setup(int sdc)
 int board_mmc_init(bd_t *bis)
 {
 	__maybe_unused struct mmc *mmc0, *mmc1;
+	__maybe_unused char buf[512];
 
 	mmc_pinmux_setup(CONFIG_MMC_SUNXI_SLOT);
 	mmc0 = sunxi_mmc_init(CONFIG_MMC_SUNXI_SLOT);
@@ -583,26 +491,25 @@ int board_mmc_init(bd_t *bis)
 		return -1;
 #endif
 
+#if !defined(CONFIG_SPL_BUILD) && CONFIG_MMC_SUNXI_SLOT_EXTRA == 2
+	/*
+	 * On systems with an emmc (mmc2), figure out if we are booting from
+	 * the emmc and if we are make it "mmc dev 0" so that boot.scr, etc.
+	 * are searched there first. Note we only do this for u-boot proper,
+	 * not for the SPL, see spl_boot_device().
+	 */
+	if (readb(SPL_ADDR + 0x28) == SUNXI_BOOTED_FROM_MMC2) {
+		/* Booting from emmc / mmc2, swap */
+		mmc0->block_dev.devnum = 1;
+		mmc1->block_dev.devnum = 0;
+	}
+#endif
+
 	return 0;
 }
 #endif
 
 #ifdef CONFIG_SPL_BUILD
-
-static void sunxi_spl_store_dram_size(phys_addr_t dram_size)
-{
-	struct boot_file_head *spl = get_spl_header(SPL_DT_HEADER_VERSION);
-
-	if (spl == INVALID_SPL_HEADER)
-		return;
-
-	/* Promote the header version for U-Boot proper, if needed. */
-	if (spl->spl_signature[3] < SPL_DRAM_HEADER_VERSION)
-		spl->spl_signature[3] = SPL_DRAM_HEADER_VERSION;
-
-	spl->dram_size = dram_size >> 20;
-}
-
 void sunxi_board_init(void)
 {
 	int power_failed = 0;
@@ -670,8 +577,6 @@ void sunxi_board_init(void)
 	printf(" %d MiB\n", (int)(gd->ram_size >> 20));
 	if (!gd->ram_size)
 		hang();
-
-	sunxi_spl_store_dram_size(gd->ram_size);
 
 	/*
 	 * Only clock up the CPU to full speed if we are reasonably
@@ -746,11 +651,16 @@ void get_board_serial(struct tag_serialnr *serialnr)
  */
 static void parse_spl_header(const uint32_t spl_addr)
 {
-	struct boot_file_head *spl = get_spl_header(SPL_ENV_HEADER_VERSION);
+	struct boot_file_head *spl = (void *)(ulong)spl_addr;
+	if (memcmp(spl->spl_signature, SPL_SIGNATURE, 3) != 0)
+		return; /* signature mismatch, no usable header */
 
-	if (spl == INVALID_SPL_HEADER)
+	uint8_t spl_header_version = spl->spl_signature[3];
+	if (spl_header_version != SPL_HEADER_VERSION) {
+		printf("sunxi SPL version mismatch: expected %u, got %u\n",
+		       SPL_HEADER_VERSION, spl_header_version);
 		return;
-
+	}
 	if (!spl->fel_script_address)
 		return;
 
@@ -837,28 +747,22 @@ static void setup_environment(const void *fdt)
 
 int misc_init_r(void)
 {
-	uint boot;
+	__maybe_unused int ret;
 
 	env_set("fel_booted", NULL);
 	env_set("fel_scriptaddr", NULL);
-	env_set("mmc_bootdev", NULL);
-
-	boot = sunxi_get_boot_device();
 	/* determine if we are running in FEL mode */
-	if (boot == BOOT_DEVICE_BOARD) {
+	if (!is_boot0_magic(SPL_ADDR + 4)) { /* eGON.BT0 */
 		env_set("fel_booted", "1");
 		parse_spl_header(SPL_ADDR);
-	/* or if we booted from MMC, and which one */
-	} else if (boot == BOOT_DEVICE_MMC1) {
-		env_set("mmc_bootdev", "0");
-	} else if (boot == BOOT_DEVICE_MMC2) {
-		env_set("mmc_bootdev", "1");
 	}
 
 	setup_environment(gd->fdt_blob);
 
-#ifdef CONFIG_USB_ETHER
-	usb_ether_init();
+#ifndef CONFIG_MACH_SUN9I
+	ret = sunxi_usb_phy_probe();
+	if (ret)
+		return ret;
 #endif
 
 	return 0;
@@ -885,11 +789,11 @@ int ft_board_setup(void *blob, bd_t *bd)
 #ifdef CONFIG_SPL_LOAD_FIT
 int board_fit_config_name_match(const char *name)
 {
-	struct boot_file_head *spl = get_spl_header(SPL_DT_HEADER_VERSION);
-	const char *cmp_str = (const char *)spl;
+	struct boot_file_head *spl = (void *)(ulong)SPL_ADDR;
+	const char *cmp_str = (void *)(ulong)SPL_ADDR;
 
 	/* Check if there is a DT name stored in the SPL header and use that. */
-	if (spl != INVALID_SPL_HEADER && spl->dt_name_offset) {
+	if (spl->dt_name_offset) {
 		cmp_str += spl->dt_name_offset;
 	} else {
 #ifdef CONFIG_DEFAULT_DEVICE_TREE
@@ -899,7 +803,6 @@ int board_fit_config_name_match(const char *name)
 #endif
 	};
 
-#ifdef CONFIG_PINE64_DT_SELECTION
 /* Differentiate the two Pine64 board DTs by their DRAM size. */
 	if (strstr(name, "-pine64") && strstr(cmp_str, "-pine64")) {
 		if ((gd->ram_size > 512 * 1024 * 1024))
@@ -909,7 +812,5 @@ int board_fit_config_name_match(const char *name)
 	} else {
 		return strcmp(name, cmp_str);
 	}
-#endif
-	return strcmp(name, cmp_str);
 }
 #endif

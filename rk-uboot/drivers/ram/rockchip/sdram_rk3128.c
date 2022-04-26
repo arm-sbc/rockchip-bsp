@@ -1,16 +1,18 @@
-// SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
  * (C) Copyright 2017 Rockchip Electronics Co., Ltd.
+ *
+ * SPDX-License-Identifier:     GPL-2.0
  */
 
 #include <common.h>
 #include <dm.h>
 #include <ram.h>
 #include <syscon.h>
-#include <asm/arch-rockchip/clock.h>
-#include <asm/arch-rockchip/grf_rk3128.h>
-#include <asm/arch-rockchip/sdram_common.h>
+#include <asm/arch/clock.h>
+#include <asm/arch/grf_rk3128.h>
+#include <asm/arch/sdram.h>
 
+DECLARE_GLOBAL_DATA_PTR;
 struct dram_info {
 	struct ram_info info;
 	struct rk3128_grf *grf;
@@ -41,6 +43,7 @@ static int rk3128_dmc_get_info(struct udevice *dev, struct ram_info *info)
 static struct ram_ops rk3128_dmc_ops = {
 	.get_info = rk3128_dmc_get_info,
 };
+
 
 static const struct udevice_id rk3128_dmc_ids[] = {
 	{ .compatible = "rockchip,rk3128-dmc" },

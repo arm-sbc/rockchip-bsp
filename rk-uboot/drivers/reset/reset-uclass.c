@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
+ *
+ * SPDX-License-Identifier: GPL-2.0
  */
 
 #include <common.h>
@@ -8,6 +9,8 @@
 #include <fdtdec.h>
 #include <reset.h>
 #include <reset-uclass.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 static inline struct reset_ops *reset_dev_ops(struct udevice *dev)
 {
@@ -29,34 +32,41 @@ static int reset_of_xlate_default(struct reset_ctl *reset_ctl,
 	return 0;
 }
 
-static int reset_get_by_index_tail(int ret, ofnode node,
-				   struct ofnode_phandle_args *args,
-				   const char *list_name, int index,
-				   struct reset_ctl *reset_ctl)
+int reset_get_by_index(struct udevice *dev, int index,
+		       struct reset_ctl *reset_ctl)
 {
+	struct ofnode_phandle_args args;
+	int ret;
 	struct udevice *dev_reset;
 	struct reset_ops *ops;
 
-	assert(reset_ctl);
+	debug("%s(dev=%p, index=%d, reset_ctl=%p)\n", __func__, dev, index,
+	      reset_ctl);
 	reset_ctl->dev = NULL;
-	if (ret)
-		return ret;
 
-	ret = uclass_get_device_by_ofnode(UCLASS_RESET, args->node,
+	ret = dev_read_phandle_with_args(dev, "resets", "#reset-cells", 0,
+					  index, &args);
+	if (ret) {
+		debug("%s: fdtdec_parse_phandle_with_args() failed: %d\n",
+		      __func__, ret);
+		return ret;
+	}
+
+	ret = uclass_get_device_by_ofnode(UCLASS_RESET, args.node,
 					  &dev_reset);
 	if (ret) {
 		debug("%s: uclass_get_device_by_ofnode() failed: %d\n",
 		      __func__, ret);
-		debug("%s %d\n", ofnode_get_name(args->node), args->args[0]);
+		debug("%s %d\n", ofnode_get_name(args.node), args.args[0]);
 		return ret;
 	}
 	ops = reset_dev_ops(dev_reset);
 
 	reset_ctl->dev = dev_reset;
 	if (ops->of_xlate)
-		ret = ops->of_xlate(reset_ctl, args);
+		ret = ops->of_xlate(reset_ctl, &args);
 	else
-		ret = reset_of_xlate_default(reset_ctl, args);
+		ret = reset_of_xlate_default(reset_ctl, &args);
 	if (ret) {
 		debug("of_xlate() failed: %d\n", ret);
 		return ret;
@@ -69,32 +79,6 @@ static int reset_get_by_index_tail(int ret, ofnode node,
 	}
 
 	return 0;
-}
-
-int reset_get_by_index(struct udevice *dev, int index,
-		       struct reset_ctl *reset_ctl)
-{
-	struct ofnode_phandle_args args;
-	int ret;
-
-	ret = dev_read_phandle_with_args(dev, "resets", "#reset-cells", 0,
-					 index, &args);
-
-	return reset_get_by_index_tail(ret, dev_ofnode(dev), &args, "resets",
-				       index > 0, reset_ctl);
-}
-
-int reset_get_by_index_nodev(ofnode node, int index,
-			     struct reset_ctl *reset_ctl)
-{
-	struct ofnode_phandle_args args;
-	int ret;
-
-	ret = ofnode_parse_phandle_with_args(node, "resets", "#reset-cells", 0,
-					     index > 0, &args);
-
-	return reset_get_by_index_tail(ret, node, &args, "resets",
-				       index > 0, reset_ctl);
 }
 
 int reset_get_bulk(struct udevice *dev, struct reset_ctl_bulk *bulk)
@@ -209,15 +193,6 @@ int reset_deassert_bulk(struct reset_ctl_bulk *bulk)
 	}
 
 	return 0;
-}
-
-int reset_status(struct reset_ctl *reset_ctl)
-{
-	struct reset_ops *ops = reset_dev_ops(reset_ctl->dev);
-
-	debug("%s(reset_ctl=%p)\n", __func__, reset_ctl);
-
-	return ops->rst_status(reset_ctl);
 }
 
 int reset_release_all(struct reset_ctl *reset_ctl, int count)

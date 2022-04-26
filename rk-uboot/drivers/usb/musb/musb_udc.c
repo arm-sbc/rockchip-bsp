@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2009 Wind River Systems, Inc.
  * Tom Rix <Tom.Rix@windriver.com>
@@ -35,6 +34,8 @@
  *         Atin Malaviya (atin.malaviya@gmail.com)
  *
  * -------------------------------------------------------------------------
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -46,6 +47,8 @@
 #include "omap3.h"
 #elif defined(CONFIG_USB_AM35X)
 #include "am35x.h"
+#elif defined(CONFIG_USB_DAVINCI)
+#include "davinci.h"
 #endif
 
 /* Define MUSB_DEBUG for debugging */

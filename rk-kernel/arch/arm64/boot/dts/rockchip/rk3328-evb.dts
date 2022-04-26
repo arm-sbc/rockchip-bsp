@@ -192,15 +192,6 @@
 		vin-supply = <&vcc_io>;
 	};
 
-	vcc_sys: vcc-sys-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_sys";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		regulator-always-on;
-		regulator-boot-on;
-	};
-
 	xin32k: xin32k {
 		compatible = "fixed-clock";
 		clock-frequency = <32768>;
@@ -231,6 +222,27 @@
 	};
 };
 
+&cif {
+	status = "okay";
+
+	port {
+		/* Parallel bus endpoint */
+		cif_para_in: endpoint {
+			remote-endpoint = <&cam_para_out1>;
+			bus-width = <8>;
+			hsync-active = <1>;
+			vsync-active = <0>;
+		};
+
+		/* MIPI CSI-2 endpoint */
+		/*
+		 * cif_mipi_in: endpoint {
+		 *	remote-endpoint = <&csi_host_output>;
+		 * };
+		 */
+	};
+};
+
 &codec {
 	#sound-dai-cells = <0>;
 	status = "okay";
@@ -247,27 +259,6 @@
 &dmc {
 	center-supply = <&vdd_logic>;
 	status = "okay";
-	system-status-freq = <
-		/*system status         freq(KHz)*/
-		SYS_STATUS_NORMAL       786000
-		SYS_STATUS_REBOOT       786000
-		SYS_STATUS_SUSPEND      786000
-		SYS_STATUS_VIDEO_1080P  786000
-		SYS_STATUS_VIDEO_4K     786000
-		SYS_STATUS_VIDEO_4K_10B 850000
-		SYS_STATUS_PERFORMANCE  850000
-		SYS_STATUS_BOOST        850000
-	>;
-};
-
-&dmc_opp_table {
-	opp-933000000 {
-		status = "disabled";
-	};
-
-	opp-1066000000 {
-		status = "disabled";
-	};
 };
 
 &display_subsystem {
@@ -341,6 +332,52 @@
 	status = "okay";
 };
 
+&i2c0 {
+	status = "okay";
+
+	gc2145: gc2145@3c {
+		status = "okay";
+		compatible = "galaxycore,gc2145";
+		reg = <0x3c>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&dvp_d2d9_m1>;
+
+		reset-gpios = <&gpio0 27 GPIO_ACTIVE_LOW>; /* gpio0 d3 */
+		/*
+		 * pwdn gpio:conflict with gpio of vcc_otg_vbus
+		 */
+		pwdn-gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+		rockchip,camera-module-index = <1>;
+		rockchip,camera-module-facing = "back";
+		rockchip,camera-module-name = "CMK-OT1055-FG1";
+		rockchip,camera-module-lens-name = "NC";
+
+		clocks = <&cru SCLK_CIF_OUT>;
+		clock-names = "xvclk";
+
+		port {
+			/* Parallel bus endpoint */
+			cam_para_out1: endpoint {
+				remote-endpoint = <&cif_para_in>;
+				bus-width = <8>;
+				hsync-active = <1>;
+				vsync-active = <0>;
+			};
+
+			/* MIPI CSI-2 endpoint */
+			/*
+			 * cam_mipi_out1: endpoint {
+			 *	remote-endpoint = <&mipi_sensor_input>;
+			 *	data-lanes = <1>;
+			 *	clock-lanes = <0>;
+			 *	clock-noncontinuous;
+			 * };
+			 */
+		};
+	};
+};
+
 &i2c1 {
 	status = "okay";
 
@@ -358,13 +395,6 @@
 		#gpio-cells = <2>;
 		#clock-cells = <1>;
 		clock-output-names = "rk805-clkout1", "rk805-clkout2";
-
-		vcc1-supply = <&vcc_sys>;
-		vcc2-supply = <&vcc_sys>;
-		vcc3-supply = <&vcc_sys>;
-		vcc4-supply = <&vcc_sys>;
-		vcc5-supply = <&vcc_io>;
-		vcc6-supply = <&vcc_sys>;
 
 		rtc {
 			status = "disabled";

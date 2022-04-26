@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Stefano Babic <sbabic@denx.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -25,7 +26,7 @@
 #include <asm/gpio.h>
 #include <mmc.h>
 #include <i2c.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <nand.h>
 #include <miiphy.h>
 #include <netdev.h>

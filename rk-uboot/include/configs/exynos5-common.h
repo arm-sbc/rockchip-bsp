@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013 Samsung Electronics
  *
  * Configuration settings for the SAMSUNG EXYNOS5 board.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_EXYNOS5_COMMON_H
@@ -44,6 +45,7 @@
 
 /* MMC SPL */
 #define COPY_BL2_FNPTR_ADDR	0x02020030
+#define CONFIG_SUPPORT_EMMC_BOOT
 
 /* specific .lds file */
 
@@ -107,13 +109,23 @@
 #define CONFIG_SYS_I2C_S3C24X0_SLAVE    0x0
 
 /* SPI */
+#ifdef CONFIG_SPI_FLASH
+#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
+#define CONFIG_SF_DEFAULT_SPEED		50000000
+#endif
 
 #ifdef CONFIG_ENV_IS_IN_SPI_FLASH
+#define CONFIG_ENV_SPI_MODE	SPI_MODE_0
 #define CONFIG_ENV_SECT_SIZE	CONFIG_ENV_SIZE
+#define CONFIG_ENV_SPI_BUS	1
+#define CONFIG_ENV_SPI_MAX_HZ	50000000
 #endif
 
 /* Ethernet Controllor Driver */
 #ifdef CONFIG_CMD_NET
+#define CONFIG_SMC911X
+#define CONFIG_SMC911X_BASE		0x5000000
+#define CONFIG_SMC911X_16_BIT
 #define CONFIG_ENV_SROM_BANK		1
 #endif /*CONFIG_CMD_NET*/
 
@@ -128,7 +140,6 @@
 #define EXYNOS_IRAM_SECONDARY_BASE	0x02020018
 
 #define BOOT_TARGET_DEVICES(func) \
-	func(MMC, mmc, 2) \
 	func(MMC, mmc, 1) \
 	func(MMC, mmc, 0) \
 	func(PXE, pxe, na) \

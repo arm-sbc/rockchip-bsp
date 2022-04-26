@@ -1,19 +1,20 @@
-# SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2016 Google, Inc
+#
+# SPDX-License-Identifier:            GPL-2.0+
 #
 # Terminal output logging.
 #
-
-from __future__ import print_function
 
 import sys
 
 import terminal
 
 # Output verbosity levels that we support
-ERROR, WARNING, NOTICE, INFO, DETAIL, DEBUG = range(6)
-
-in_progress = False
+ERROR = 0
+WARNING = 1
+NOTICE = 2
+INFO = 3
+DEBUG = 4
 
 """
 This class handles output of progress and other useful information
@@ -48,11 +49,9 @@ def UserIsPresent():
 
 def ClearProgress():
     """Clear any active progress message on the terminal."""
-    global in_progress
-    if verbose > 0 and stdout_is_tty and in_progress:
+    if verbose > 0 and stdout_is_tty:
         _stdout.write('\r%s\r' % (" " * len (_progress)))
         _stdout.flush()
-        in_progress = False
 
 def Progress(msg, warning=False, trailer='...'):
     """Display progress information.
@@ -60,7 +59,6 @@ def Progress(msg, warning=False, trailer='...'):
     Args:
         msg: Message to display.
         warning: True if this is a warning."""
-    global in_progress
     ClearProgress()
     if verbose > 0:
         _progress = msg + trailer
@@ -68,7 +66,6 @@ def Progress(msg, warning=False, trailer='...'):
             col = _color.YELLOW if warning else _color.GREEN
             _stdout.write('\r' + _color.Color(col, _progress))
             _stdout.flush()
-            in_progress = True
         else:
             _stdout.write(_progress + '\n')
 
@@ -85,7 +82,7 @@ def _Output(level, msg, color=None):
         ClearProgress()
         if color:
             msg = _color.Color(color, msg)
-        print(msg)
+        _stdout.write(msg + '\n')
 
 def DoOutput(level, msg):
     """Output a message to the terminal.
@@ -103,7 +100,7 @@ def Error(msg):
     Args:
         msg; Message to display.
     """
-    _Output(ERROR, msg, _color.RED)
+    _Output(0, msg, _color.RED)
 
 def Warning(msg):
     """Display a warning message
@@ -111,7 +108,7 @@ def Warning(msg):
     Args:
         msg; Message to display.
     """
-    _Output(WARNING, msg, _color.YELLOW)
+    _Output(1, msg, _color.YELLOW)
 
 def Notice(msg):
     """Display an important infomation message
@@ -119,7 +116,7 @@ def Notice(msg):
     Args:
         msg; Message to display.
     """
-    _Output(NOTICE, msg)
+    _Output(2, msg)
 
 def Info(msg):
     """Display an infomation message
@@ -127,15 +124,7 @@ def Info(msg):
     Args:
         msg; Message to display.
     """
-    _Output(INFO, msg)
-
-def Detail(msg):
-    """Display a detailed message
-
-    Args:
-        msg; Message to display.
-    """
-    _Output(DETAIL, msg)
+    _Output(3, msg)
 
 def Debug(msg):
     """Display a debug message
@@ -143,7 +132,7 @@ def Debug(msg):
     Args:
         msg; Message to display.
     """
-    _Output(DEBUG, msg)
+    _Output(4, msg)
 
 def UserOutput(msg):
     """Display a message regardless of the current output level.

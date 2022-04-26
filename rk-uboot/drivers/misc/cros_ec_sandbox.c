@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Chromium OS cros_ec driver - sandbox emulation
  *
  * Copyright (c) 2013 The Chromium OS Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -50,6 +51,8 @@
  * the EC image in with U-Boot (Vic has demonstrated a prototype for this).
  */
 
+DECLARE_GLOBAL_DATA_PTR;
+
 #define KEYBOARD_ROWS	8
 #define KEYBOARD_COLS	13
 
@@ -74,7 +77,7 @@ struct ec_keymatrix_entry {
  * @recovery_req: Keyboard recovery requested
  */
 struct ec_state {
-	u8 vbnv_context[EC_VBNV_BLOCK_SIZE_V2];
+	uint8_t vbnv_context[EC_VBNV_BLOCK_SIZE];
 	struct fdt_cros_ec ec_config;
 	uint8_t *flash_data;
 	int flash_data_len;
@@ -313,15 +316,13 @@ static int process_cmd(struct ec_state *ec,
 
 		switch (req->op) {
 		case EC_VBNV_CONTEXT_OP_READ:
-			/* TODO(sjg@chromium.org): Support full-size context */
 			memcpy(resp->block, ec->vbnv_context,
-			       EC_VBNV_BLOCK_SIZE);
-			len = 16;
+			       sizeof(resp->block));
+			len = sizeof(*resp);
 			break;
 		case EC_VBNV_CONTEXT_OP_WRITE:
-			/* TODO(sjg@chromium.org): Support full-size context */
-			memcpy(ec->vbnv_context, req->block,
-			       EC_VBNV_BLOCK_SIZE);
+			memcpy(ec->vbnv_context, resp->block,
+			       sizeof(resp->block));
 			len = 0;
 			break;
 		default:
@@ -367,7 +368,7 @@ static int process_cmd(struct ec_state *ec,
 		struct fmap_entry *entry;
 		int ret, size;
 
-		entry = &ec->ec_config.region[EC_FLASH_REGION_ACTIVE];
+		entry = &ec->ec_config.region[EC_FLASH_REGION_RW];
 
 		switch (req->cmd) {
 		case EC_VBOOT_HASH_RECALC:
@@ -422,7 +423,7 @@ static int process_cmd(struct ec_state *ec,
 
 		switch (req->region) {
 		case EC_FLASH_REGION_RO:
-		case EC_FLASH_REGION_ACTIVE:
+		case EC_FLASH_REGION_RW:
 		case EC_FLASH_REGION_WP_RO:
 			entry = &ec->ec_config.region[req->region];
 			resp->offset = entry->offset;
@@ -493,9 +494,9 @@ int cros_ec_sandbox_packet(struct udevice *udev, int out_bytes, int in_bytes)
 	return in_bytes;
 }
 
-void cros_ec_check_keyboard(struct udevice *dev)
+void cros_ec_check_keyboard(struct cros_ec_dev *dev)
 {
-	struct ec_state *ec = dev_get_priv(dev);
+	struct ec_state *ec = dev_get_priv(dev->dev);
 	ulong start;
 
 	printf("Press keys for EC to detect on reset (ESC=recovery)...");

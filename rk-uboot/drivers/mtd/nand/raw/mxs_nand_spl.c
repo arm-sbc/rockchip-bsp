@@ -1,12 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014 Gateworks Corporation
  * Author: Tim Harvey <tharvey@gateworks.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <nand.h>
 #include <malloc.h>
-#include <mxs_nand.h>
+#include "mxs_nand.h"
 
 static struct mtd_info *mtd;
 static struct nand_chip nand_chip;

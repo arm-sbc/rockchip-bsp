@@ -9,6 +9,10 @@
  * This driver provides a SCSI interface to SATA.
  */
 #include <common.h>
+#include <blk.h>
+#include <log.h>
+#include <linux/bitops.h>
+#include <linux/delay.h>
 
 #include <command.h>
 #include <dm.h>
@@ -49,6 +53,8 @@ struct ahci_uc_priv *probe_ent = NULL;
 #define WAIT_MS_DATAIO	10000
 #define WAIT_MS_FLUSH	5000
 #define WAIT_MS_LINKUP	200
+
+#define AHCI_CAP_S64A BIT(31)
 
 __weak void __iomem *ahci_port_base(void __iomem *base, u32 port)
 {
@@ -503,9 +509,15 @@ static int ahci_fill_sg(struct ahci_uc_priv *uc_priv, u8 port,
 	}
 
 	for (i = 0; i < sg_count; i++) {
-		ahci_sg->addr =
-		    cpu_to_le32((unsigned long) buf + i * MAX_DATA_BYTE_COUNT);
-		ahci_sg->addr_hi = 0;
+		/* We assume virt=phys */
+		phys_addr_t pa = (unsigned long)buf + i * MAX_DATA_BYTE_COUNT;
+
+		ahci_sg->addr = cpu_to_le32(lower_32_bits(pa));
+		ahci_sg->addr_hi = cpu_to_le32(upper_32_bits(pa));
+		if (ahci_sg->addr_hi && !(uc_priv->cap & AHCI_CAP_S64A)) {
+			printf("Error: DMA address too high\n");
+			return -1;
+		}
 		ahci_sg->flags_size = cpu_to_le32(0x3fffff &
 					  (buf_len < MAX_DATA_BYTE_COUNT
 					   ? (buf_len - 1)
@@ -1015,7 +1027,7 @@ void scsi_low_level_init(int busdevfunc)
 
 #ifndef CONFIG_SCSI_AHCI_PLAT
 # if defined(CONFIG_DM_PCI) || defined(CONFIG_DM_SCSI)
-int ahci_init_one_dm(struct udevice *dev)
+int achi_init_one_dm(struct udevice *dev)
 {
 	struct ahci_uc_priv *uc_priv = dev_get_uclass_priv(dev);
 
@@ -1024,7 +1036,7 @@ int ahci_init_one_dm(struct udevice *dev)
 #endif
 #endif
 
-int ahci_start_ports_dm(struct udevice *dev)
+int achi_start_ports_dm(struct udevice *dev)
 {
 	struct ahci_uc_priv *uc_priv = dev_get_uclass_priv(dev);
 

@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013, Google Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifdef USE_HOSTCC
@@ -9,6 +10,7 @@
 #else
 #include <common.h>
 #include <malloc.h>
+#include <optee_include/OpteeClientInterface.h>
 DECLARE_GLOBAL_DATA_PTR;
 #endif /* !USE_HOSTCC*/
 #include <image.h>
@@ -89,21 +91,6 @@ struct checksum_algo *image_get_checksum_algo(const char *full_name)
 	int i;
 	const char *name;
 
-#if !defined(USE_HOSTCC) && defined(CONFIG_NEEDS_MANUAL_RELOC)
-	static bool done;
-
-	if (!done) {
-		done = true;
-		for (i = 0; i < ARRAY_SIZE(checksum_algos); i++) {
-			checksum_algos[i].name += gd->reloc_off;
-#if IMAGE_ENABLE_SIGN
-			checksum_algos[i].calculate_sign += gd->reloc_off;
-#endif
-			checksum_algos[i].calculate += gd->reloc_off;
-		}
-	}
-#endif
-
 	for (i = 0; i < ARRAY_SIZE(checksum_algos); i++) {
 		name = checksum_algos[i].name;
 		/* Make sure names match and next char is a comma */
@@ -119,20 +106,6 @@ struct crypto_algo *image_get_crypto_algo(const char *full_name)
 {
 	int i;
 	const char *name;
-
-#if !defined(USE_HOSTCC) && defined(CONFIG_NEEDS_MANUAL_RELOC)
-	static bool done;
-
-	if (!done) {
-		done = true;
-		for (i = 0; i < ARRAY_SIZE(crypto_algos); i++) {
-			crypto_algos[i].name += gd->reloc_off;
-			crypto_algos[i].sign += gd->reloc_off;
-			crypto_algos[i].add_verify_data += gd->reloc_off;
-			crypto_algos[i].verify += gd->reloc_off;
-		}
-	}
-#endif
 
 	/* Move name to after the comma */
 	name = strchr(full_name, ',');
@@ -214,11 +187,6 @@ static int fit_image_setup_verify(struct image_sign_info *info,
 	char *algo_name;
 	const char *padding_name;
 
-	if (fdt_totalsize(fit) > CONFIG_FIT_SIGNATURE_MAX_SIZE) {
-		*err_msgp = "Total size too large";
-		return 1;
-	}
-
 	if (fit_image_hash_get_algo(fit, noffset, &algo_name)) {
 		*err_msgp = "Can't get hash algo property";
 		return -1;
@@ -240,7 +208,7 @@ static int fit_image_setup_verify(struct image_sign_info *info,
 	info->required_keynode = required_keynode;
 	printf("%s:%s", algo_name, info->keyname);
 
-	if (!info->checksum || !info->crypto || !info->padding) {
+	if (!info->checksum || !info->crypto) {
 		*err_msgp = "Unknown signature algorithm";
 		return -1;
 	}
@@ -310,7 +278,8 @@ static int fit_image_verify_sig(const void *fit, int image_noffset,
 		goto error;
 	}
 
-	return verified ? 0 : -EPERM;
+	if (verified)
+		return 0;
 
 error:
 	printf(" error!\n%s for '%s' hash node in '%s' image node\n",
@@ -331,9 +300,8 @@ int fit_image_verify_required_sigs(const void *fit, int image_noffset,
 	*no_sigsp = 1;
 	sig_node = fdt_subnode_offset(sig_blob, 0, FIT_SIG_NODENAME);
 	if (sig_node < 0) {
-		debug("%s: No signature node found: %s\n", __func__,
-		      fdt_strerror(sig_node));
-		return 0;
+		printf("No RSA key found\n");
+		return -EINVAL;
 	}
 
 	fdt_for_each_subnode(noffset, sig_blob, sig_node) {
@@ -398,11 +366,6 @@ int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
 		return -1;
 	}
 
-	if (prop && prop_len > 0 && prop[prop_len - 1] != '\0') {
-		*err_msgp = "hashed-nodes property must be null-terminated";
-		return -1;
-	}
-
 	/* Add a sanity check here since we are using the stack */
 	if (count > IMAGE_MAX_HASHED_NODES) {
 		*err_msgp = "Number of hashed nodes exceeds maximum";
@@ -420,7 +383,7 @@ int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
 
 	/*
 	 * Each node can generate one region for each sub-node. Allow for
-	 * 7 sub-nodes (hash-1, signature-1, etc.) and some extra.
+	 * 7 sub-nodes (hash@1, signature@1, etc.) and some extra.
 	 */
 	max_regions = 20 + count * 7;
 	struct fdt_region fdt_regions[max_regions];
@@ -446,11 +409,8 @@ int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
 	/* Add the strings */
 	strings = fdt_getprop(fit, noffset, "hashed-strings", NULL);
 	if (strings) {
-		/*
-		 * The strings region offset must be a static 0x0.
-		 * This is set in tool/image-host.c
-		 */
-		fdt_regions[count].offset = fdt_off_dt_strings(fit);
+		fdt_regions[count].offset = fdt_off_dt_strings(fit) +
+				fdt32_to_cpu(strings[0]);
 		fdt_regions[count].size = fdt32_to_cpu(strings[1]);
 		count++;
 	}
@@ -464,6 +424,12 @@ int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
 		*err_msgp = "Verification failed";
 		return -1;
 	}
+	/* Get the secure flag here and write the secure data and the secure flag */
+#if !defined(USE_HOSTCC)
+#ifdef CONFIG_SPL_FIT_HW_CRYPTO
+	rsa_burn_key_hash(&info);
+#endif
+#endif
 
 	return 0;
 }
@@ -499,7 +465,8 @@ static int fit_config_verify_sig(const void *fit, int conf_noffset,
 		goto error;
 	}
 
-	return verified ? 0 : -EPERM;
+	if (verified)
+		return 0;
 
 error:
 	printf(" error!\n%s for '%s' hash node in '%s' config node\n",
@@ -517,9 +484,8 @@ int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
 	/* Work out what we need to verify */
 	sig_node = fdt_subnode_offset(sig_blob, 0, FIT_SIG_NODENAME);
 	if (sig_node < 0) {
-		debug("%s: No signature node found: %s\n", __func__,
-		      fdt_strerror(sig_node));
-		return 0;
+		printf("No RSA key found\n");
+		return -EINVAL;
 	}
 
 	fdt_for_each_subnode(noffset, sig_blob, sig_node) {
@@ -534,7 +500,12 @@ int fit_config_verify_required_sigs(const void *fit, int conf_noffset,
 		if (ret) {
 			printf("Failed to verify required signature '%s'\n",
 			       fit_get_name(sig_blob, noffset, NULL));
+#ifndef USE_HOSTCC
+			if (fit_board_verify_required_sigs())
+				return ret;
+#else
 			return ret;
+#endif
 		}
 	}
 
@@ -546,3 +517,22 @@ int fit_config_verify(const void *fit, int conf_noffset)
 	return fit_config_verify_required_sigs(fit, conf_noffset,
 					       gd_fdt_blob());
 }
+
+#ifndef USE_HOSTCC
+#if CONFIG_IS_ENABLED(FIT_ROLLBACK_PROTECT)
+__weak int fit_read_otp_rollback_index(uint32_t fit_index, uint32_t *otp_index)
+{
+	*otp_index = 0;
+
+	return 0;
+}
+__weak int fit_rollback_index_verify(const void *fit, uint32_t rollback_fd,
+				     uint32_t *this_index, uint32_t *min_index)
+{
+	*this_index = 0;
+	*min_index = 0;
+
+	return 0;
+}
+#endif
+#endif

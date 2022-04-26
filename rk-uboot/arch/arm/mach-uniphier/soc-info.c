@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2017 Socionext Inc.
  *   Author: Masahiro Yamada <yamada.masahiro@socionext.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <linux/io.h>
@@ -13,7 +14,7 @@
 static unsigned int __uniphier_get_revision_field(unsigned int mask,
 						  unsigned int shift)
 {
-	u32 revision = readl(sg_base + SG_REVISION);
+	u32 revision = readl(SG_REVISION);
 
 	return (revision >> shift) & mask;
 }

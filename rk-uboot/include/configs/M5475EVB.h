@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuation settings for the Freescale MCF5475 board.
  *
  * Copyright (C) 2004-2008 Freescale Semiconductor, Inc.
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -28,6 +29,7 @@
 
 #define CONFIG_FSLDMAFEC
 #ifdef CONFIG_FSLDMAFEC
+#	define CONFIG_MII		1
 #	define CONFIG_MII_INIT		1
 #	define CONFIG_HAS_ETH1
 
@@ -108,7 +110,7 @@
 #	define CONFIG_GATEWAYIP	192.162.1.1
 #endif				/* FEC_ENET */
 
-#define CONFIG_HOSTNAME		"M547xEVB"
+#define CONFIG_HOSTNAME		M547xEVB
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"netdev=eth0\0"				\
 	"loadaddr=10000\0"			\
@@ -122,6 +124,7 @@
 	""
 
 #define CONFIG_PRAM		512	/* 512 KB */
+#define CONFIG_SYS_LONGHELP		/* undef to save memory */
 
 #define CONFIG_SYS_LOAD_ADDR		0x00010000
 
@@ -189,10 +192,14 @@
 /*-----------------------------------------------------------------------
  * FLASH organization
  */
+#define CONFIG_SYS_FLASH_CFI
 #ifdef CONFIG_SYS_FLASH_CFI
 #	define CONFIG_SYS_FLASH_BASE		(CONFIG_SYS_CS0_BASE)
+#	define CONFIG_FLASH_CFI_DRIVER	1
 #	define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
 #	define CONFIG_SYS_MAX_FLASH_SECT	137	/* max number of sectors on one chip */
+#	define CONFIG_SYS_FLASH_PROTECTION	/* "Real" (hardware) sectors protection */
+#	define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
 #ifdef CONFIG_SYS_NOR1SZ
 #	define CONFIG_SYS_MAX_FLASH_BANKS	2	/* max number of memory banks */
 #	define CONFIG_SYS_FLASH_SIZE		((CONFIG_SYS_NOR1SZ + CONFIG_SYS_BOOTSZ) << 20)

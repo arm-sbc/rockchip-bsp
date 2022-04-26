@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008 Semihalf
  *
  * (C) Copyright 2000-2006
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef USE_HOSTCC
 #include <common.h>
-#include <env.h>
 #include <watchdog.h>
 
 #ifdef CONFIG_SHOW_BOOT_PROGRESS
@@ -17,7 +17,7 @@
 
 #include <rtc.h>
 
-#include <gzip.h>
+#include <environment.h>
 #include <image.h>
 #include <mapmem.h>
 
@@ -33,19 +33,13 @@
 #include <linux/errno.h>
 #include <asm/io.h>
 
-#include <bzlib.h>
-#include <linux/lzo.h>
-#include <lzma/LzmaTypes.h>
-#include <lzma/LzmaDec.h>
-#include <lzma/LzmaTools.h>
-
 #ifdef CONFIG_CMD_BDI
 extern int do_bdinfo(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
 #endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
+#if defined(CONFIG_IMAGE_FORMAT_LEGACY)
 static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 						int verify);
 #endif
@@ -61,7 +55,6 @@ static const image_header_t *image_get_ramdisk(ulong rd_addr, uint8_t arch,
 #endif /* !USE_HOSTCC*/
 
 #include <u-boot/crc.h>
-#include <imximage.h>
 
 #ifndef CONFIG_SYS_BARGSIZE
 #define CONFIG_SYS_BARGSIZE 512
@@ -99,6 +92,7 @@ static const table_entry_t uimage_arch[] = {
 
 static const table_entry_t uimage_os[] = {
 	{	IH_OS_INVALID,	"invalid",	"Invalid OS",		},
+	{       IH_OS_OP_TEE, "op-tee", "OP-TEE"  },
 	{       IH_OS_ARM_TRUSTED_FIRMWARE, "arm-trusted-firmware", "ARM Trusted Firmware"  },
 	{	IH_OS_LINUX,	"linux",	"Linux",		},
 #if defined(CONFIG_LYNXKDI) || defined(USE_HOSTCC)
@@ -108,7 +102,6 @@ static const table_entry_t uimage_os[] = {
 	{	IH_OS_OSE,	"ose",		"Enea OSE",		},
 	{	IH_OS_PLAN9,	"plan9",	"Plan 9",		},
 	{	IH_OS_RTEMS,	"rtems",	"RTEMS",		},
-	{	IH_OS_TEE,	"tee",		"Trusted Execution Environment" },
 	{	IH_OS_U_BOOT,	"u-boot",	"U-Boot",		},
 	{	IH_OS_VXWORKS,	"vxworks",	"VxWorks",		},
 #if defined(CONFIG_CMD_ELF) || defined(USE_HOSTCC)
@@ -133,7 +126,6 @@ static const table_entry_t uimage_os[] = {
 #if defined(CONFIG_BOOTM_OPENRTOS) || defined(USE_HOSTCC)
 	{	IH_OS_OPENRTOS,	"openrtos",	"OpenRTOS",		},
 #endif
-	{	IH_OS_OPENSBI,	"opensbi",	"RISC-V OpenSBI",	},
 
 	{	-1,		"",		"",			},
 };
@@ -148,16 +140,13 @@ static const table_entry_t uimage_type[] = {
 	{	IH_TYPE_KERNEL_NOLOAD, "kernel_noload",  "Kernel Image (no loading done)", },
 	{	IH_TYPE_KWBIMAGE,   "kwbimage",   "Kirkwood Boot Image",},
 	{	IH_TYPE_IMXIMAGE,   "imximage",   "Freescale i.MX Boot Image",},
-	{	IH_TYPE_IMX8IMAGE,  "imx8image",  "NXP i.MX8 Boot Image",},
-	{	IH_TYPE_IMX8MIMAGE, "imx8mimage", "NXP i.MX8M Boot Image",},
 	{	IH_TYPE_INVALID,    "invalid",	  "Invalid Image",	},
 	{	IH_TYPE_MULTI,	    "multi",	  "Multi-File Image",	},
 	{	IH_TYPE_OMAPIMAGE,  "omapimage",  "TI OMAP SPL With GP CH",},
 	{	IH_TYPE_PBLIMAGE,   "pblimage",   "Freescale PBL Boot Image",},
 	{	IH_TYPE_RAMDISK,    "ramdisk",	  "RAMDisk Image",	},
 	{	IH_TYPE_SCRIPT,     "script",	  "Script",		},
-	{	IH_TYPE_SOCFPGAIMAGE, "socfpgaimage", "Altera SoCFPGA CV/AV preloader",},
-	{	IH_TYPE_SOCFPGAIMAGE_V1, "socfpgaimage_v1", "Altera SoCFPGA A10 preloader",},
+	{	IH_TYPE_SOCFPGAIMAGE, "socfpgaimage", "Altera SOCFPGA preloader",},
 	{	IH_TYPE_STANDALONE, "standalone", "Standalone Program", },
 	{	IH_TYPE_UBLIMAGE,   "ublimage",   "Davinci UBL image",},
 	{	IH_TYPE_MXSIMAGE,   "mxsimage",   "Freescale MXS Boot Image",},
@@ -170,14 +159,11 @@ static const table_entry_t uimage_type[] = {
 	{	IH_TYPE_VYBRIDIMAGE, "vybridimage",  "Vybrid Boot Image", },
 	{	IH_TYPE_ZYNQIMAGE,  "zynqimage",  "Xilinx Zynq Boot Image" },
 	{	IH_TYPE_ZYNQMPIMAGE, "zynqmpimage", "Xilinx ZynqMP Boot Image" },
-	{	IH_TYPE_ZYNQMPBIF,  "zynqmpbif",  "Xilinx ZynqMP Boot Image (bif)" },
 	{	IH_TYPE_FPGA,       "fpga",       "FPGA Image" },
 	{       IH_TYPE_TEE,        "tee",        "Trusted Execution Environment Image",},
 	{	IH_TYPE_FIRMWARE_IVT, "firmware_ivt", "Firmware with HABv4 IVT" },
 	{       IH_TYPE_PMMC,        "pmmc",        "TI Power Management Micro-Controller Firmware",},
-	{	IH_TYPE_STM32IMAGE, "stm32image", "STMicroelectronics STM32 Image" },
-	{	IH_TYPE_MTKIMAGE,   "mtk_image",   "MediaTek BootROM loadable Image" },
-	{	IH_TYPE_COPRO, "copro", "Coprocessor Image"},
+	{	IH_TYPE_RKNAND,     "rknand",     "Rockchip NAND Boot Image" },
 	{	-1,		    "",		  "",			},
 };
 
@@ -207,6 +193,26 @@ static const struct table_info table_info[IH_COUNT] = {
 /*****************************************************************************/
 /* Legacy format routines */
 /*****************************************************************************/
+#ifndef USE_HOSTCC
+#ifndef CONFIG_SPL_BUILD
+uint32_t image_get_load(const image_header_t *hdr)
+{
+	uint32_t load = uimage_to_cpu(hdr->ih_load);
+
+	return (load == IMAGE_PARAM_INVAL) ?
+		env_get_ulong("kernel_addr_r", 16, 0) : load;
+}
+
+uint32_t image_get_ep(const image_header_t *hdr)
+{
+	uint32_t ep = uimage_to_cpu(hdr->ih_ep);
+
+	return (ep == IMAGE_PARAM_INVAL) ?
+		env_get_ulong("kernel_addr_r", 16, 0) : ep;
+}
+#endif
+#endif
+
 int image_check_hcrc(const image_header_t *hdr)
 {
 	ulong hcrc;
@@ -254,7 +260,7 @@ ulong image_multi_count(const image_header_t *hdr)
 	size = (uint32_t *)image_get_data(hdr);
 
 	/* count non empty slots */
-	for (i = 0; size[i]; ++i)
+	for (i = 0; size[i] != IMAGE_PARAM_INVAL; ++i)
 		count++;
 
 	return count;
@@ -379,115 +385,15 @@ void image_print_contents(const void *ptr)
 		}
 	} else if (image_check_type(hdr, IH_TYPE_FIRMWARE_IVT)) {
 		printf("HAB Blocks:   0x%08x   0x0000   0x%08x\n",
-			image_get_load(hdr) - image_get_header_size(),
-			(int)(image_get_size(hdr) + image_get_header_size()
-			+ sizeof(flash_header_v2_t) - 0x2060));
+				image_get_load(hdr) - image_get_header_size(),
+				image_get_size(hdr) + image_get_header_size()
+						- 0x1FE0);
 	}
-}
-
-/**
- * print_decomp_msg() - Print a suitable decompression/loading message
- *
- * @type:	OS type (IH_OS_...)
- * @comp_type:	Compression type being used (IH_COMP_...)
- * @is_xip:	true if the load address matches the image start
- */
-static void print_decomp_msg(int comp_type, int type, bool is_xip)
-{
-	const char *name = genimg_get_type_name(type);
-
-	if (comp_type == IH_COMP_NONE)
-		printf("   %s %s\n", is_xip ? "XIP" : "Loading", name);
-	else
-		printf("   Uncompressing %s\n", name);
-}
-
-int image_decomp(int comp, ulong load, ulong image_start, int type,
-		 void *load_buf, void *image_buf, ulong image_len,
-		 uint unc_len, ulong *load_end)
-{
-	int ret = 0;
-
-	*load_end = load;
-	print_decomp_msg(comp, type, load == image_start);
-
-	/*
-	 * Load the image to the right place, decompressing if needed. After
-	 * this, image_len will be set to the number of uncompressed bytes
-	 * loaded, ret will be non-zero on error.
-	 */
-	switch (comp) {
-	case IH_COMP_NONE:
-		if (load == image_start)
-			break;
-		if (image_len <= unc_len)
-			memmove_wd(load_buf, image_buf, image_len, CHUNKSZ);
-		else
-			ret = -ENOSPC;
-		break;
-#ifdef CONFIG_GZIP
-	case IH_COMP_GZIP: {
-		ret = gunzip(load_buf, unc_len, image_buf, &image_len);
-		break;
-	}
-#endif /* CONFIG_GZIP */
-#ifdef CONFIG_BZIP2
-	case IH_COMP_BZIP2: {
-		uint size = unc_len;
-
-		/*
-		 * If we've got less than 4 MB of malloc() space,
-		 * use slower decompression algorithm which requires
-		 * at most 2300 KB of memory.
-		 */
-		ret = BZ2_bzBuffToBuffDecompress(load_buf, &size,
-			image_buf, image_len,
-			CONFIG_SYS_MALLOC_LEN < (4096 * 1024), 0);
-		image_len = size;
-		break;
-	}
-#endif /* CONFIG_BZIP2 */
-#ifdef CONFIG_LZMA
-	case IH_COMP_LZMA: {
-		SizeT lzma_len = unc_len;
-
-		ret = lzmaBuffToBuffDecompress(load_buf, &lzma_len,
-					       image_buf, image_len);
-		image_len = lzma_len;
-		break;
-	}
-#endif /* CONFIG_LZMA */
-#ifdef CONFIG_LZO
-	case IH_COMP_LZO: {
-		size_t size = unc_len;
-
-		ret = lzop_decompress(image_buf, image_len, load_buf, &size);
-		image_len = size;
-		break;
-	}
-#endif /* CONFIG_LZO */
-#ifdef CONFIG_LZ4
-	case IH_COMP_LZ4: {
-		size_t size = unc_len;
-
-		ret = ulz4fn(image_buf, image_len, load_buf, &size);
-		image_len = size;
-		break;
-	}
-#endif /* CONFIG_LZ4 */
-	default:
-		printf("Unimplemented compression type %d\n", comp);
-		return -ENOSYS;
-	}
-
-	*load_end = load + image_len;
-
-	return ret;
 }
 
 
 #ifndef USE_HOSTCC
-#if CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
+#if defined(CONFIG_IMAGE_FORMAT_LEGACY)
 /**
  * image_get_ramdisk - get and verify ramdisk image
  * @rd_addr: ramdisk image start address
@@ -583,7 +489,7 @@ ulong env_get_bootm_low(void)
 
 #if defined(CONFIG_SYS_SDRAM_BASE)
 	return CONFIG_SYS_SDRAM_BASE;
-#elif defined(CONFIG_ARM) || defined(CONFIG_MICROBLAZE)
+#elif defined(CONFIG_ARM)
 	return gd->bd->bi_dram[0].start;
 #else
 	return 0;
@@ -600,8 +506,7 @@ phys_size_t env_get_bootm_size(void)
 		return tmp;
 	}
 
-#if (defined(CONFIG_ARM) || defined(CONFIG_MICROBLAZE)) && \
-     defined(CONFIG_NR_DRAM_BANKS)
+#if defined(CONFIG_ARM) && defined(CONFIG_NR_DRAM_BANKS)
 	start = gd->bd->bi_dram[0].start;
 	size = gd->bd->bi_dram[0].size;
 #else
@@ -661,11 +566,6 @@ void memmove_wd(void *to, void *from, size_t len, ulong chunksz)
 #else	/* !(CONFIG_HW_WATCHDOG || CONFIG_WATCHDOG) */
 	memmove(to, from, len);
 #endif	/* CONFIG_HW_WATCHDOG || CONFIG_WATCHDOG */
-}
-#else	/* USE_HOSTCC */
-void memmove_wd(void *to, void *from, size_t len, ulong chunksz)
-{
-	memmove(to, from, len);
 }
 #endif /* !USE_HOSTCC */
 
@@ -983,7 +883,7 @@ ulong genimg_get_kernel_addr(char * const img_addr)
  */
 int genimg_get_format(const void *img_addr)
 {
-#if CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
+#if defined(CONFIG_IMAGE_FORMAT_LEGACY)
 	const image_header_t *hdr;
 
 	hdr = (const image_header_t *)img_addr;
@@ -1049,7 +949,7 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 {
 	ulong rd_addr, rd_load;
 	ulong rd_data, rd_len;
-#if CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
+#if defined(CONFIG_IMAGE_FORMAT_LEGACY)
 	const image_header_t *rd_hdr;
 #endif
 	void *buf;
@@ -1073,7 +973,7 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 	 */
 	buf = map_sysmem(images->os.start, 0);
 	if (buf && genimg_get_format(buf) == IMAGE_FORMAT_ANDROID)
-		select = (argc == 0) ? env_get("loadaddr") : argv[0];
+		select = argv[0];
 #endif
 
 	if (argc >= 2)
@@ -1141,7 +1041,7 @@ int boot_get_ramdisk(int argc, char * const argv[], bootm_headers_t *images,
 		 */
 		buf = map_sysmem(rd_addr, 0);
 		switch (genimg_get_format(buf)) {
-#if CONFIG_IS_ENABLED(LEGACY_IMAGE_FORMAT)
+#if defined(CONFIG_IMAGE_FORMAT_LEGACY)
 		case IMAGE_FORMAT_LEGACY:
 			printf("## Loading init Ramdisk from Legacy "
 					"Image at %08lx ...\n", rd_addr);
@@ -1283,6 +1183,9 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 			*initrd_end = rd_data + rd_len;
 			lmb_reserve(lmb, rd_data, rd_len);
 		} else {
+			if (initrd_high && env_get_yesno("bootm-reloc-at"))
+				initrd_high += rd_len;
+
 			if (initrd_high)
 				*initrd_start = (ulong)lmb_alloc_base(lmb,
 						rd_len, 0x1000, initrd_high);
@@ -1309,8 +1212,7 @@ int boot_ramdisk_high(struct lmb *lmb, ulong rd_data, ulong rd_len,
 			 * AMP boot scenarios in which we might not be
 			 * HW cache coherent
 			 */
-			flush_cache((unsigned long)*initrd_start,
-				    ALIGN(rd_len, ARCH_DMA_MINALIGN));
+			flush_cache((unsigned long)*initrd_start, rd_len);
 #endif
 			puts("OK\n");
 		}
@@ -1339,7 +1241,7 @@ int boot_get_setup(bootm_headers_t *images, uint8_t arch,
 }
 
 #if IMAGE_ENABLE_FIT
-#if defined(CONFIG_FPGA)
+#if defined(CONFIG_FPGA) && defined(CONFIG_FPGA_XILINX)
 int boot_get_fpga(int argc, char * const argv[], bootm_headers_t *images,
 		  uint8_t arch, const ulong *ld_start, ulong * const ld_len)
 {
@@ -1350,6 +1252,8 @@ int boot_get_fpga(int argc, char * const argv[], bootm_headers_t *images,
 	const char *uname, *name;
 	int err;
 	int devnum = 0; /* TODO support multi fpga platforms */
+	const fpga_desc * const desc = fpga_get_desc(devnum);
+	xilinx_desc *desc_xilinx = desc->devdesc;
 
 	/* Check to see if the images struct has a FIT configuration */
 	if (!genimg_has_config(images)) {
@@ -1394,7 +1298,7 @@ int boot_get_fpga(int argc, char * const argv[], bootm_headers_t *images,
 			return fit_img_result;
 		}
 
-		if (!fpga_is_partial_data(devnum, img_len)) {
+		if (img_len >= desc_xilinx->size) {
 			name = "full";
 			err = fpga_loadbitstream(devnum, (char *)img_data,
 						 img_len, BIT_FULL);
@@ -1532,7 +1436,7 @@ int boot_get_loadable(int argc, char * const argv[], bootm_headers_t *images,
  * @cmd_end: pointer to a ulong variable, will hold cmdline end
  *
  * boot_get_cmdline() allocates space for kernel command line below
- * BOOTMAPSZ + env_get_bootm_low() address. If "bootargs" U-Boot environment
+ * BOOTMAPSZ + env_get_bootm_low() address. If "bootargs" U-Boot environemnt
  * variable is present its contents is copied to allocated kernel
  * command line.
  *

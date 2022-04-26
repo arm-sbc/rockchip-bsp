@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010-2016 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* #define DEBUG */
@@ -8,8 +9,7 @@
 #include <common.h>
 
 #include <command.h>
-#include <env.h>
-#include <env_internal.h>
+#include <environment.h>
 #include <linux/stddef.h>
 #include <errno.h>
 #include <memalign.h>
@@ -23,6 +23,8 @@
 #if !defined(CONFIG_ENV_OFFSET) || !defined(CONFIG_ENV_SIZE)
 #error CONFIG_ENV_OFFSET or CONFIG_ENV_SIZE not defined
 #endif
+
+DECLARE_GLOBAL_DATA_PTR;
 
 __weak int sata_get_env_dev(void)
 {
@@ -66,7 +68,7 @@ static int env_sata_save(void)
 		return 1;
 
 	printf("Writing to SATA(%d)...", env_sata);
-	if (write_env(sata, CONFIG_ENV_SIZE, CONFIG_ENV_OFFSET, (u_char *)env_new)) {
+	if (write_env(sata, CONFIG_ENV_SIZE, CONFIG_ENV_OFFSET, &env_new)) {
 		puts("failed\n");
 		return 1;
 	}
@@ -107,11 +109,13 @@ static void env_sata_load(void)
 	}
 
 	if (read_env(sata, CONFIG_ENV_SIZE, CONFIG_ENV_OFFSET, buf)) {
-		env_set_default(NULL, 0);
+		set_default_env(NULL);
 		return -EIO;
 	}
 
-	return env_import(buf, 1);
+	env_import(buf, 1);
+
+	return 0;
 }
 
 U_BOOT_ENV_LOCATION(sata) = {

@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Thomas Chou <thomas@wytron.com.tw>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -47,10 +48,6 @@ static int timer_pre_probe(struct udevice *dev)
 	struct clk timer_clk;
 	int err;
 	ulong ret;
-
-	/* It is possible that a timer device has a null ofnode */
-	if (!dev_of_valid(dev))
-		return 0;
 
 	err = clk_get_by_index(dev, 0, &timer_clk);
 	if (!err) {
@@ -112,7 +109,7 @@ int notrace dm_timer_init(void)
 		 * If the timer is not marked to be bound before
 		 * relocation, bind it anyway.
 		 */
-		if (!lists_bind_fdt(dm_root(), node, &dev, false)) {
+		if (!lists_bind_fdt(dm_root(), node, &dev)) {
 			ret = device_probe(dev);
 			if (ret)
 				return ret;

@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2009-2012 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -45,6 +46,11 @@
 
 /* High Level Configuration Options */
 #define CONFIG_SYS_BOOK3E_HV		/* Category E.HV supported */
+#define CONFIG_MP			/* support multiple processors */
+
+#ifndef CONFIG_SYS_TEXT_BASE
+#define CONFIG_SYS_TEXT_BASE	0xeff40000
+#endif
 
 #ifndef CONFIG_RESET_VECTOR_ADDRESS
 #define CONFIG_RESET_VECTOR_ADDRESS	0xeffffffc
@@ -54,20 +60,35 @@
 #define CONFIG_SYS_NUM_CPC		CONFIG_SYS_NUM_DDR_CTLRS
 #define CONFIG_PCIE1			/* PCIE controller 1 */
 #define CONFIG_PCIE2			/* PCIE controller 2 */
+#define CONFIG_FSL_PCI_INIT		/* Use common FSL init code */
 #define CONFIG_SYS_PCI_64BIT		/* enable 64-bit PCI resources */
 
 #define CONFIG_ENV_OVERWRITE
 
+#ifndef CONFIG_MTD_NOR_FLASH
+#else
+#define CONFIG_FLASH_CFI_DRIVER
+#define CONFIG_SYS_FLASH_CFI
+#define CONFIG_SYS_FLASH_USE_BUFFER_WRITE
+#endif
+
 #if defined(CONFIG_SPIFLASH)
+#define CONFIG_SYS_EXTRA_ENV_RELOC
+#define CONFIG_ENV_SPI_BUS              0
+#define CONFIG_ENV_SPI_CS               0
+#define CONFIG_ENV_SPI_MAX_HZ           10000000
+#define CONFIG_ENV_SPI_MODE             0
 #define CONFIG_ENV_SIZE                 0x2000          /* 8KB */
 #define CONFIG_ENV_OFFSET               0x100000        /* 1MB */
 #define CONFIG_ENV_SECT_SIZE            0x10000
 #elif defined(CONFIG_SDCARD)
+#define CONFIG_SYS_EXTRA_ENV_RELOC
 #define CONFIG_FSL_FIXED_MMC_LOCATION
 #define CONFIG_SYS_MMC_ENV_DEV          0
 #define CONFIG_ENV_SIZE			0x2000
 #define CONFIG_ENV_OFFSET		(512 * 1658)
 #elif defined(CONFIG_NAND)
+#define CONFIG_SYS_EXTRA_ENV_RELOC
 #define CONFIG_ENV_SIZE			CONFIG_SYS_NAND_BLOCK_SIZE
 #define CONFIG_ENV_OFFSET		(7 * CONFIG_SYS_NAND_BLOCK_SIZE)
 #elif defined(CONFIG_SRIO_PCIE_BOOT_SLAVE)
@@ -106,6 +127,7 @@
 #define CONFIG_POST CONFIG_SYS_POST_MEMORY	/* test POST memory test */
 #define CONFIG_SYS_MEMTEST_START	0x00200000	/* memtest works on */
 #define CONFIG_SYS_MEMTEST_END		0x00400000
+#define CONFIG_SYS_ALT_MEMTEST
 
 /*
  *  Config the L3 Cache as L3 SRAM
@@ -250,6 +272,9 @@
 #define CONFIG_SYS_FLASH_AMD_CHECK_DQ7
 #define CONFIG_SYS_FLASH_BANKS_LIST	{CONFIG_SYS_FLASH_BASE_PHYS + 0x8000000, CONFIG_SYS_FLASH_BASE_PHYS}
 
+#define CONFIG_BOARD_EARLY_INIT_R	/* call board_early_init_r function */
+#define CONFIG_MISC_INIT_R
+
 #define CONFIG_HWCONFIG
 
 /* define to use L1 as initial stack */
@@ -280,6 +305,7 @@
  * open - index 2
  * shorted - index 1
  */
+#define CONFIG_CONS_INDEX	1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
 #define CONFIG_SYS_NS16550_CLK		(get_bus_freq(0)/2)
@@ -353,6 +379,8 @@
 /*
  * eSPI - Enhanced SPI
  */
+#define CONFIG_SF_DEFAULT_SPEED         10000000
+#define CONFIG_SF_DEFAULT_MODE          0
 
 /*
  * General PCI
@@ -361,27 +389,71 @@
 
 /* controller 1, direct to uli, tgtid 3, Base address 20000 */
 #define CONFIG_SYS_PCIE1_MEM_VIRT	0x80000000
+#ifdef CONFIG_PHYS_64BIT
+#define CONFIG_SYS_PCIE1_MEM_BUS	0xe0000000
 #define CONFIG_SYS_PCIE1_MEM_PHYS	0xc00000000ull
+#else
+#define CONFIG_SYS_PCIE1_MEM_BUS	0x80000000
+#define CONFIG_SYS_PCIE1_MEM_PHYS	0x80000000
+#endif
+#define CONFIG_SYS_PCIE1_MEM_SIZE	0x20000000	/* 512M */
 #define CONFIG_SYS_PCIE1_IO_VIRT	0xf8000000
+#define CONFIG_SYS_PCIE1_IO_BUS		0x00000000
+#ifdef CONFIG_PHYS_64BIT
 #define CONFIG_SYS_PCIE1_IO_PHYS	0xff8000000ull
+#else
+#define CONFIG_SYS_PCIE1_IO_PHYS	0xf8000000
+#endif
+#define CONFIG_SYS_PCIE1_IO_SIZE	0x00010000	/* 64k */
 
 /* controller 2, Slot 2, tgtid 2, Base address 201000 */
 #define CONFIG_SYS_PCIE2_MEM_VIRT	0xa0000000
+#ifdef CONFIG_PHYS_64BIT
+#define CONFIG_SYS_PCIE2_MEM_BUS	0xe0000000
 #define CONFIG_SYS_PCIE2_MEM_PHYS	0xc20000000ull
+#else
+#define CONFIG_SYS_PCIE2_MEM_BUS	0xa0000000
+#define CONFIG_SYS_PCIE2_MEM_PHYS	0xa0000000
+#endif
+#define CONFIG_SYS_PCIE2_MEM_SIZE	0x20000000	/* 512M */
 #define CONFIG_SYS_PCIE2_IO_VIRT	0xf8010000
+#define CONFIG_SYS_PCIE2_IO_BUS		0x00000000
+#ifdef CONFIG_PHYS_64BIT
 #define CONFIG_SYS_PCIE2_IO_PHYS	0xff8010000ull
+#else
+#define CONFIG_SYS_PCIE2_IO_PHYS	0xf8010000
+#endif
+#define CONFIG_SYS_PCIE2_IO_SIZE	0x00010000	/* 64k */
 
 /* controller 3, Slot 1, tgtid 1, Base address 202000 */
 #define CONFIG_SYS_PCIE3_MEM_VIRT	0xc0000000
+#ifdef CONFIG_PHYS_64BIT
+#define CONFIG_SYS_PCIE3_MEM_BUS	0xe0000000
 #define CONFIG_SYS_PCIE3_MEM_PHYS	0xc40000000ull
+#else
+#define CONFIG_SYS_PCIE3_MEM_BUS	0xc0000000
+#define CONFIG_SYS_PCIE3_MEM_PHYS	0xc0000000
+#endif
+#define CONFIG_SYS_PCIE3_MEM_SIZE	0x20000000	/* 512M */
 #define CONFIG_SYS_PCIE3_IO_VIRT	0xf8020000
+#define CONFIG_SYS_PCIE3_IO_BUS		0x00000000
+#ifdef CONFIG_PHYS_64BIT
 #define CONFIG_SYS_PCIE3_IO_PHYS	0xff8020000ull
+#else
+#define CONFIG_SYS_PCIE3_IO_PHYS	0xf8020000
+#endif
+#define CONFIG_SYS_PCIE3_IO_SIZE	0x00010000	/* 64k */
 
 /* controller 4, Base address 203000 */
+#define CONFIG_SYS_PCIE4_MEM_BUS	0xe0000000
 #define CONFIG_SYS_PCIE4_MEM_PHYS	0xc60000000ull
+#define CONFIG_SYS_PCIE4_MEM_SIZE	0x20000000	/* 512M */
+#define CONFIG_SYS_PCIE4_IO_BUS		0x00000000
 #define CONFIG_SYS_PCIE4_IO_PHYS	0xff8030000ull
+#define CONFIG_SYS_PCIE4_IO_SIZE	0x00010000	/* 64k */
 
 /* Qman/Bman */
+#define CONFIG_SYS_DPAA_QBMAN		/* Support Q/Bman */
 #define CONFIG_SYS_BMAN_NUM_PORTALS	10
 #define CONFIG_SYS_BMAN_MEM_BASE	0xf4000000
 #ifdef CONFIG_PHYS_64BIT
@@ -423,6 +495,7 @@
  * env is stored at 0x100000, sector size is 0x10000, ucode is stored after
  * env, so we got 0x110000.
  */
+#define CONFIG_SYS_QE_FW_IN_SPIFLASH
 #define CONFIG_SYS_FMAN_FW_ADDR	0x110000
 #elif defined(CONFIG_SDCARD)
 /*
@@ -430,8 +503,10 @@
  * about 825KB (1650 blocks), Env is stored after the image, and the env size is
  * 0x2000 (16 blocks), 8 + 1650 + 16 = 1674, enlarge it to 1680.
  */
+#define CONFIG_SYS_QE_FMAN_FW_IN_MMC
 #define CONFIG_SYS_FMAN_FW_ADDR	(512 * 1680)
 #elif defined(CONFIG_NAND)
+#define CONFIG_SYS_QE_FMAN_FW_IN_NAND
 #define CONFIG_SYS_FMAN_FW_ADDR	(8 * CONFIG_SYS_NAND_BLOCK_SIZE)
 #elif defined(CONFIG_SRIO_PCIE_BOOT_SLAVE)
 /*
@@ -441,46 +516,33 @@
  * slave SRIO or PCIE outbound window->master inbound window->
  * master LAW->the ucode address in master's memory space.
  */
+#define CONFIG_SYS_QE_FMAN_FW_IN_REMOTE
 #define CONFIG_SYS_FMAN_FW_ADDR	0xFFE00000
 #else
+#define CONFIG_SYS_QE_FMAN_FW_IN_NOR
 #define CONFIG_SYS_FMAN_FW_ADDR		0xEFF00000
 #endif
 #define CONFIG_SYS_QE_FMAN_FW_LENGTH	0x10000
 #define CONFIG_SYS_FDT_PAD		(0x3000 + CONFIG_SYS_QE_FMAN_FW_LENGTH)
 
 #ifdef CONFIG_SYS_DPAA_FMAN
+#define CONFIG_FMAN_ENET
 #define CONFIG_PHYLIB_10G
 #define CONFIG_PHY_VITESSE
 #define CONFIG_PHY_TERANETICS
 #endif
 
 #ifdef CONFIG_PCI
-#if !defined(CONFIG_DM_PCI)
-#define CONFIG_FSL_PCI_INIT	/* Use common FSL init code */
 #define CONFIG_PCI_INDIRECT_BRIDGE
-#define CONFIG_SYS_PCIE1_MEM_BUS	0xe0000000
-#define CONFIG_SYS_PCIE1_MEM_SIZE	0x20000000      /* 512M */
-#define CONFIG_SYS_PCIE1_IO_BUS		0x00000000
-#define CONFIG_SYS_PCIE1_IO_SIZE	0x00010000	/* 64k */
-#define CONFIG_SYS_PCIE2_MEM_BUS	0xe0000000
-#define CONFIG_SYS_PCIE2_MEM_SIZE	0x20000000	/* 512M */
-#define CONFIG_SYS_PCIE2_IO_BUS		0x00000000
-#define CONFIG_SYS_PCIE2_IO_SIZE	0x00010000	/* 64k */
-#define CONFIG_SYS_PCIE3_MEM_BUS	0xe0000000
-#define CONFIG_SYS_PCIE3_MEM_SIZE	0x20000000	/* 512M */
-#define CONFIG_SYS_PCIE3_IO_BUS		0x00000000
-#define CONFIG_SYS_PCIE3_IO_SIZE	0x00010000	/* 64k */
-#define CONFIG_SYS_PCIE4_MEM_BUS	0xe0000000
-#define CONFIG_SYS_PCIE4_MEM_SIZE	0x20000000	/* 512M */
-#define CONFIG_SYS_PCIE4_IO_BUS		0x00000000
-#define CONFIG_SYS_PCIE4_IO_SIZE	0x00010000	/* 64k */
-#endif
 
 #define CONFIG_PCI_SCAN_SHOW		/* show pci devices on startup */
 #endif	/* CONFIG_PCI */
 
 /* SATA */
 #ifdef CONFIG_FSL_SATA_V2
+#define CONFIG_LIBATA
+#define CONFIG_FSL_SATA
+
 #define CONFIG_SYS_SATA_MAX_DEVICE	2
 #define CONFIG_SATA1
 #define CONFIG_SYS_SATA1		CONFIG_SYS_MPC85xx_SATA1_ADDR
@@ -506,6 +568,7 @@
 #define CONFIG_SYS_FM2_10GEC1_PHY_ADDR	0
 
 #define CONFIG_SYS_TBIPA_VALUE	8
+#define CONFIG_MII		/* MII PHY management */
 #define CONFIG_ETHPRIME		"FM1@DTSEC1"
 #endif
 
@@ -527,6 +590,7 @@
 #endif
 
 #ifdef CONFIG_MMC
+#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR       CONFIG_SYS_MPC85xx_ESDHC_ADDR
 #define CONFIG_SYS_FSL_ESDHC_BROKEN_TIMEOUT
 #endif
@@ -534,6 +598,9 @@
 /*
  * Miscellaneous configurable options
  */
+#define CONFIG_SYS_LONGHELP			/* undef to save memory	*/
+#define CONFIG_CMDLINE_EDITING			/* Command-line editing */
+#define CONFIG_AUTO_COMPLETE			/* add autocompletion support */
 #define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address */
 
 /*

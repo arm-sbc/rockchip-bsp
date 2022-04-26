@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Stefan Roese <sr@denx.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_TQMA6_WRU4_H
@@ -16,7 +17,12 @@
 #define CONFIG_MXC_UART_BASE		UART4_BASE
 #define CONSOLE_DEV		"ttymxc3"
 
+#define CONFIG_MISC_INIT_R
+
 /* Watchdog */
+#define CONFIG_HW_WATCHDOG
+#define CONFIG_IMX_WATCHDOG
+#define CONFIG_WATCHDOG_TIMEOUT_MSECS	60000
 
 /* Config on-board RTC */
 #define CONFIG_RTC_DS1337
@@ -28,6 +34,14 @@
 /* LED */
 
 /* Bootcounter */
+#define CONFIG_BOOTCOUNT_LIMIT
+#define CONFIG_SYS_BOOTCOUNT_ADDR	IRAM_BASE_ADDR
 #define CONFIG_SYS_BOOTCOUNT_BE
+
+/*
+ * Remove all unused interfaces / commands that are defined in
+ * the common header tqms6.h
+ */
+#undef CONFIG_MXC_SPI
 
 #endif /* __CONFIG_TQMA6_WRU4_H */

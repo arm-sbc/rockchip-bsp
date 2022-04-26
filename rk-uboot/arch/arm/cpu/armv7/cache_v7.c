@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010
  * Texas Instruments, <www.ti.com>
  * Aneesh V <aneesh@ti.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <linux/types.h>
 #include <common.h>
@@ -12,7 +13,7 @@
 #define ARMV7_DCACHE_INVAL_RANGE	1
 #define ARMV7_DCACHE_CLEAN_INVAL_RANGE	2
 
-#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
+#ifndef CONFIG_SYS_DCACHE_OFF
 
 /* Asm functions from cache_v7_asm.S */
 void v7_flush_dcache_all(void);
@@ -43,8 +44,22 @@ static void v7_dcache_inval_range(u32 start, u32 stop, u32 line_len)
 {
 	u32 mva;
 
-	if (!check_cache_range(start, stop))
-		return;
+#ifdef DEBUG
+	check_cache_range(start, stop);
+#endif
+	/* aligned ? backward and flush a line_len */
+	if (start & (line_len - 1)) {
+		mva = start & ~(line_len - 1);
+		asm volatile ("mcr p15, 0, %0, c7, c14, 1" : : "r" (mva));
+		start = mva + line_len;
+	}
+
+	/* aligned ? forward and flush a line_len */
+	if (stop & (line_len - 1)) {
+		mva = stop & ~(line_len - 1);
+		asm volatile ("mcr p15, 0, %0, c7, c14, 1" : : "r" (mva));
+		stop = mva;
+	}
 
 	for (mva = start; mva < stop; mva = mva + line_len) {
 		/* DCIMVAC - Invalidate data cache by MVA to PoC */
@@ -116,8 +131,9 @@ void flush_dcache_all(void)
  */
 void invalidate_dcache_range(unsigned long start, unsigned long stop)
 {
+#ifdef DEBUG
 	check_cache_range(start, stop);
-
+#endif
 	v7_dcache_maint_range(start, stop, ARMV7_DCACHE_INVAL_RANGE);
 
 	v7_outer_cache_inval_range(start, stop);
@@ -130,8 +146,9 @@ void invalidate_dcache_range(unsigned long start, unsigned long stop)
  */
 void flush_dcache_range(unsigned long start, unsigned long stop)
 {
+#ifdef DEBUG
 	check_cache_range(start, stop);
-
+#endif
 	v7_dcache_maint_range(start, stop, ARMV7_DCACHE_CLEAN_INVAL_RANGE);
 
 	v7_outer_cache_flush_range(start, stop);
@@ -149,7 +166,7 @@ void mmu_page_table_flush(unsigned long start, unsigned long stop)
 	flush_dcache_range(start, stop);
 	v7_inval_tlb();
 }
-#else /* #if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF) */
+#else /* #ifndef CONFIG_SYS_DCACHE_OFF */
 void invalidate_dcache_all(void)
 {
 }
@@ -177,9 +194,9 @@ void mmu_page_table_flush(unsigned long start, unsigned long stop)
 void arm_init_domains(void)
 {
 }
-#endif /* #if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF) */
+#endif /* #ifndef CONFIG_SYS_DCACHE_OFF */
 
-#if !CONFIG_IS_ENABLED(SYS_ICACHE_OFF)
+#ifndef CONFIG_SYS_ICACHE_OFF
 /* Invalidate entire I-cache and branch predictor array */
 void invalidate_icache_all(void)
 {

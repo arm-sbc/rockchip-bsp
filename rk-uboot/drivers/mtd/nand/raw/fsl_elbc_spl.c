@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * NAND boot for Freescale Enhanced Local Bus Controller, Flash Control Machine
  *
@@ -7,16 +6,14 @@
  *
  * Copyright (c) 2008 Freescale Semiconductor, Inc.
  * Author: Scott Wood <scottwood@freescale.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/io.h>
 #include <asm/fsl_lbc.h>
 #include <nand.h>
-
-#ifdef CONFIG_MPC83xx
-#include "../../../arch/powerpc/cpu/mpc83xx/elbc/elbc.h"
-#endif
 
 #define WINDOW_SIZE 8192
 

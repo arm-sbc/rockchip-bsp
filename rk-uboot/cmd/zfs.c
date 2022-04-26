@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  *
  * ZFS filesystem porting to Uboot by
@@ -6,13 +5,14 @@
  *
  * zfsfs support
  * made from existing GRUB Sources by Sun, GNU and others.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <part.h>
 #include <config.h>
 #include <command.h>
-#include <env.h>
 #include <image.h>
 #include <linux/ctype.h>
 #include <asm/byteorder.h>

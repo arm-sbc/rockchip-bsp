@@ -1,6 +1,7 @@
-// SPDX-License-Identifier:	GPL-2.0+
 /*
- * Copyright (C) 2019 Rockchip Electronic Co.,Ltd
+ * Copyright (C) 2017 Rockchip Electronic Co.,Ltd
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #undef CONFIG_SPL_TEXT_BASE

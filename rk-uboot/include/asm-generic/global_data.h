@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2012 The Chromium OS Authors.
  * (C) Copyright 2002-2010
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_GENERIC_GBL_DATA_H
@@ -20,9 +21,23 @@
  */
 
 #ifndef __ASSEMBLY__
-#include <fdtdec.h>
 #include <membuff.h>
 #include <linux/list.h>
+
+/* Never change the sequence of members !!! */
+struct pm_ctx {
+	unsigned long sp;
+	phys_addr_t cpu_resume_addr;
+	unsigned long suspend_regs[15];
+};
+
+struct pre_serial {
+	u32 using_pre_serial;
+	u32 enable;
+	u32 id;
+	u32 baudrate;
+	ulong addr;
+};
 
 typedef struct global_data {
 	bd_t *bd;
@@ -33,7 +48,7 @@ typedef struct global_data {
 	/* We cannot bracket this with CONFIG_PCI due to mpc5xxx */
 	unsigned long pci_clk;
 	unsigned long mem_clk;
-#if defined(CONFIG_LCD) || defined(CONFIG_VIDEO) || defined(CONFIG_DM_VIDEO)
+#if defined(CONFIG_LCD) || defined(CONFIG_VIDEO)
 	unsigned long fb_base;		/* Base address of framebuffer mem */
 #endif
 #if defined(CONFIG_POST)
@@ -50,10 +65,7 @@ typedef struct global_data {
 #endif
 	unsigned long env_addr;		/* Address  of Environment struct */
 	unsigned long env_valid;	/* Environment valid? enum env_valid */
-	unsigned long env_has_init;	/* Bitmask of boolean of struct env_location offsets */
-	int env_load_prio;		/* Priority of the loaded environment */
 
-	unsigned long ram_base;		/* Base address of RAM used by U-Boot */
 	unsigned long ram_top;		/* Top address of RAM used by U-Boot */
 	unsigned long relocaddr;	/* Start address of U-Boot in RAM */
 	phys_size_t ram_size;		/* RAM size */
@@ -72,15 +84,18 @@ typedef struct global_data {
 	struct udevice	*timer;		/* Timer instance for Driver Model */
 #endif
 
+#ifdef CONFIG_USING_KERNEL_DTB
+	const void *fdt_blob_kern;	/* Kernel dtb at the tail of u-boot.bin */
+#endif
 	const void *fdt_blob;		/* Our device tree, NULL if none */
+
+#ifdef CONFIG_USING_KERNEL_DTB
+	const void *ufdt_blob;		/* Our U-Boot device tree, NULL if none */
+#endif
 	void *new_fdt;			/* Relocated FDT */
 	unsigned long fdt_size;		/* Space reserved for relocated FDT */
 #ifdef CONFIG_OF_LIVE
 	struct device_node *of_root;
-#endif
-
-#if CONFIG_IS_ENABLED(MULTI_DTB_FIT)
-	const void *multi_dtb_fit;	/* uncompressed multi-dtb FIT image */
 #endif
 	struct jt_funcs *jt;		/* jump table */
 	char env_buf[32];		/* buffer for env_get() before reloc. */
@@ -121,24 +136,21 @@ typedef struct global_data {
 	struct bootstage_data *bootstage;	/* Bootstage information */
 	struct bootstage_data *new_bootstage;	/* Relocated bootstage info */
 #endif
+	phys_addr_t pm_ctx_phys;
+
+#ifdef CONFIG_BOOTSTAGE_PRINTF_TIMESTAMP
+	int new_line;
+#endif
+	struct pre_serial serial;
+	ulong sys_start_tick;		/* For report system start-up time */
+	int console_evt;		/* Console event, maybe some hotkey  */
 #ifdef CONFIG_LOG
 	int log_drop_count;		/* Number of dropped log messages */
 	int default_log_level;		/* For devices with no filters */
 	struct list_head log_head;	/* List of struct log_device */
-	int log_fmt;			/* Mask containing log format info */
 #endif
-#if CONFIG_IS_ENABLED(BLOBLIST)
-	struct bloblist_hdr *bloblist;	/* Bloblist information */
-	struct bloblist_hdr *new_bloblist;	/* Relocated blolist info */
-# ifdef CONFIG_SPL
-	struct spl_handoff *spl_handoff;
-# endif
-#endif
-#if defined(CONFIG_TRANSLATION_OFFSET)
-	fdt_addr_t translation_offset;	/* optional translation offset */
-#endif
-#if CONFIG_IS_ENABLED(WDT)
-	struct udevice *watchdog_dev;
+#if CONFIG_IS_ENABLED(FIT_ROLLBACK_PROTECT)
+	u32 rollback_index;
 #endif
 } gd_t;
 #endif
@@ -150,7 +162,7 @@ typedef struct global_data {
 #endif
 
 /*
- * Global Data Flags
+ * Global Data Flags - the top 16 bits are reserved for arch-specific flags
  */
 #define GD_FLG_RELOC		0x00001	/* Code was relocated to RAM	   */
 #define GD_FLG_DEVINIT		0x00002	/* Devices have been initialized   */
@@ -168,6 +180,11 @@ typedef struct global_data {
 #define GD_FLG_ENV_DEFAULT	0x02000 /* Default variable flag	   */
 #define GD_FLG_SPL_EARLY_INIT	0x04000 /* Early SPL init is done	   */
 #define GD_FLG_LOG_READY	0x08000 /* Log system is ready for use	   */
-#define GD_FLG_WDT_READY	0x10000 /* Watchdog is ready for use	   */
+#define GD_FLG_KDTB_READY	0x10000 /* Kernel dtb is ready for use	   */
+
+#ifdef CONFIG_ARCH_ROCKCHIP
+/* BL32 is enabled */
+#define GD_FLG_BL32_ENABLED	0x20000
+#endif
 
 #endif /* __ASM_GENERIC_GBL_DATA_H */

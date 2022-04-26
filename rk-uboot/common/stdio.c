@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2009 Sergey Kubushyn <ksi@koi8.net>
  *
@@ -6,6 +5,8 @@
  *
  * (C) Copyright 2000
  * Paolo Scaffardi, AIRVENT SAM s.p.a - RIMINI(ITALY), arsenio@tin.it
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -16,7 +17,6 @@
 #include <malloc.h>
 #include <stdio_dev.h>
 #include <serial.h>
-#include <splash.h>
 
 #if defined(CONFIG_SYS_I2C)
 #include <i2c.h>
@@ -54,6 +54,11 @@ static int nulldev_input(struct stdio_dev *dev)
 	/* nulldev is empty! */
 	return 0;
 }
+
+static void nulldev_clear(struct stdio_dev *dev)
+{
+	/* nulldev is empty! */
+}
 #endif
 
 static void stdio_serial_putc(struct stdio_dev *dev, const char c)
@@ -76,6 +81,11 @@ static int stdio_serial_tstc(struct stdio_dev *dev)
 	return serial_tstc();
 }
 
+static void stdio_serial_clear(struct stdio_dev *dev)
+{
+	serial_clear();
+}
+
 /**************************************************************************
  * SYSTEM DRIVERS
  **************************************************************************
@@ -93,6 +103,7 @@ static void drv_system_init (void)
 	dev.puts = stdio_serial_puts;
 	dev.getc = stdio_serial_getc;
 	dev.tstc = stdio_serial_tstc;
+	dev.clear = stdio_serial_clear;
 	stdio_register (&dev);
 
 #ifdef CONFIG_SYS_DEVICE_NULLDEV
@@ -104,6 +115,7 @@ static void drv_system_init (void)
 	dev.puts = nulldev_puts;
 	dev.getc = nulldev_input;
 	dev.tstc = nulldev_input;
+	dev.clear = nulldev_clear;
 
 	stdio_register (&dev);
 #endif
@@ -367,9 +379,6 @@ int stdio_add_devices(void)
 	if (ret)
 		printf("%s: Video device failed (ret=%d)\n", __func__, ret);
 #endif /* !CONFIG_SYS_CONSOLE_IS_IN_ENV */
-#if defined(CONFIG_SPLASH_SCREEN) && defined(CONFIG_CMD_BMP)
-	splash_display();
-#endif /* CONFIG_SPLASH_SCREEN && CONFIG_CMD_BMP */
 #else
 # if defined(CONFIG_LCD)
 	drv_lcd_init ();

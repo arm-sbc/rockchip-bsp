@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * OMAP USB PHY Support
  *
@@ -6,6 +5,8 @@
  * Texas Instruments, <www.ti.com>
  *
  * Author: Dan Murphy <dmurphy@ti.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>

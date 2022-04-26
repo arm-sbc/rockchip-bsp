@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Most of this source has been derived from the Linux USB
  * project:
@@ -14,6 +13,8 @@
  *
  * Adapted for U-Boot:
  * (C) Copyright 2001 Denis Peter, MPL AG Switzerland
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /****************************************************************************
@@ -24,7 +25,6 @@
 #include <common.h>
 #include <command.h>
 #include <dm.h>
-#include <env.h>
 #include <errno.h>
 #include <memalign.h>
 #include <asm/processor.h>
@@ -36,6 +36,8 @@
 #include <asm/state.h>
 #endif
 #include <asm/unaligned.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #include <usb.h>
 
@@ -234,18 +236,26 @@ static struct usb_hub_device *usb_hub_allocate(void)
 
 #define MAX_TRIES 5
 
-static inline const char *portspeed(int portstatus)
+static inline char *portspeed(int portstatus)
 {
+	char *speed_str;
+
 	switch (portstatus & USB_PORT_STAT_SPEED_MASK) {
 	case USB_PORT_STAT_SUPER_SPEED:
-		return "5 Gb/s";
+		speed_str = "5 Gb/s";
+		break;
 	case USB_PORT_STAT_HIGH_SPEED:
-		return "480 Mb/s";
+		speed_str = "480 Mb/s";
+		break;
 	case USB_PORT_STAT_LOW_SPEED:
-		return "1.5 Mb/s";
+		speed_str = "1.5 Mb/s";
+		break;
 	default:
-		return "12 Mb/s";
+		speed_str = "12 Mb/s";
+		break;
 	}
+
+	return speed_str;
 }
 
 /**

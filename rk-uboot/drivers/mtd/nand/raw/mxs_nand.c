@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Freescale i.MX28 NAND flash driver
  *
@@ -10,6 +9,8 @@
  *
  * Copyright (C) 2010 Freescale Semiconductor, Inc.
  * Copyright (C) 2008 Embedded Alley Solutions, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -25,7 +26,7 @@
 #include <asm/mach-imx/regs-bch.h>
 #include <asm/mach-imx/regs-gpmi.h>
 #include <asm/arch/sys_proto.h>
-#include <mxs_nand.h>
+#include "mxs_nand.h"
 
 #define	MXS_NAND_DMA_DESCRIPTOR_COUNT		4
 
@@ -50,7 +51,7 @@ struct nand_ecclayout fake_ecc_layout;
 /*
  * Cache management functions
  */
-#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
+#ifndef	CONFIG_SYS_DCACHE_OFF
 static void mxs_nand_flush_data_buf(struct mxs_nand_info *info)
 {
 	uint32_t addr = (uint32_t)info->data_buf;

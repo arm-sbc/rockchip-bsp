@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007-2011
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
  * Tom Cubie <tangliang@allwinnertech.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -96,8 +97,6 @@ int print_cpuinfo(void)
 	puts("CPU:   Allwinner A64 (SUN50I)\n");
 #elif defined CONFIG_MACH_SUN50I_H5
 	puts("CPU:   Allwinner H5 (SUN50I)\n");
-#elif defined CONFIG_MACH_SUN50I_H6
-	puts("CPU:   Allwinner H6 (SUN50I)\n");
 #else
 #warning Please update cpu_info.c with correct CPU information
 	puts("CPU:   SUNXI Family\n");

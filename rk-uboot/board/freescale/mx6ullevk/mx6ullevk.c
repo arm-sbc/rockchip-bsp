@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Freescale Semiconductor, Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -14,8 +15,7 @@
 #include <asm/mach-imx/boot_mode.h>
 #include <asm/io.h>
 #include <common.h>
-#include <env.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <linux/sizes.h>
 #include <mmc.h>
 
@@ -84,10 +84,7 @@ int board_late_init(void)
 #endif
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
-	if (is_cpu_type(MXC_CPU_MX6ULZ))
-		env_set("board_name", "ULZ-EVK");
-	else
-		env_set("board_name", "EVK");
+	env_set("board_name", "EVK");
 	env_set("board_rev", "14X14");
 #endif
 
@@ -96,10 +93,7 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	if (is_cpu_type(MXC_CPU_MX6ULZ))
-		puts("Board: MX6ULZ 14x14 EVK\n");
-	else
-		puts("Board: MX6ULL 14x14 EVK\n");
+	puts("Board: MX6ULL 14x14 EVK\n");
 
 	return 0;
 }

@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014, Bin Meng <bmeng.cn@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <handoff.h>
 #include <asm/fsp/fsp_support.h>
 #include <asm/e820.h>
 #include <asm/mrccache.h>
@@ -12,7 +12,7 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-int fsp_scan_for_ram_size(void)
+int dram_init(void)
 {
 	phys_size_t ram_size = 0;
 	const struct hob_header *hdr;
@@ -23,8 +23,9 @@ int fsp_scan_for_ram_size(void)
 		if (hdr->type == HOB_TYPE_RES_DESC) {
 			res_desc = (struct hob_res_desc *)hdr;
 			if (res_desc->type == RES_SYS_MEM ||
-			    res_desc->type == RES_MEM_RESERVED)
+			    res_desc->type == RES_MEM_RESERVED) {
 				ram_size += res_desc->len;
+			}
 		}
 		hdr = get_next_hob(hdr);
 	}
@@ -32,8 +33,13 @@ int fsp_scan_for_ram_size(void)
 	gd->ram_size = ram_size;
 	post_code(POST_DRAM);
 
+#ifdef CONFIG_ENABLE_MRC_CACHE
+	gd->arch.mrc_output = fsp_get_nvs_data(gd->arch.hob_list,
+					       &gd->arch.mrc_output_len);
+#endif
+
 	return 0;
-};
+}
 
 int dram_init_banksize(void)
 {
@@ -43,10 +49,22 @@ int dram_init_banksize(void)
 	return 0;
 }
 
-unsigned int install_e820_map(unsigned int max_entries,
-			      struct e820_entry *entries)
+/*
+ * This function looks for the highest region of memory lower than 4GB which
+ * has enough space for U-Boot where U-Boot is aligned on a page boundary.
+ * It overrides the default implementation found elsewhere which simply
+ * picks the end of ram, wherever that may be. The location of the stack,
+ * the relocation address, and how far U-Boot is moved by relocation are
+ * set in the global data structure.
+ */
+ulong board_get_usable_ram_top(ulong total_size)
 {
-	unsigned int num_entries = 0;
+	return fsp_get_usable_lowmem_top(gd->arch.hob_list);
+}
+
+unsigned install_e820_map(unsigned max_entries, struct e820entry *entries)
+{
+	unsigned num_entries = 0;
 	const struct hob_header *hdr;
 	struct hob_res_desc *res_desc;
 
@@ -80,7 +98,7 @@ unsigned int install_e820_map(unsigned int max_entries,
 	 * reserved in order for ACPI S3 resume to work.
 	 */
 	entries[num_entries].addr = gd->start_addr_sp - CONFIG_STACK_SIZE;
-	entries[num_entries].size = gd->ram_top - gd->start_addr_sp +
+	entries[num_entries].size = gd->ram_top - gd->start_addr_sp + \
 		CONFIG_STACK_SIZE;
 	entries[num_entries].type = E820_RESERVED;
 	num_entries++;
@@ -88,13 +106,3 @@ unsigned int install_e820_map(unsigned int max_entries,
 
 	return num_entries;
 }
-
-#if CONFIG_IS_ENABLED(HANDOFF) && IS_ENABLED(CONFIG_USE_HOB)
-int handoff_arch_save(struct spl_handoff *ho)
-{
-	ho->arch.usable_ram_top = fsp_get_usable_lowmem_top(gd->arch.hob_list);
-	ho->arch.hob_list = gd->arch.hob_list;
-
-	return 0;
-}
-#endif

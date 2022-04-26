@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2015
  * NVIDIA Corporation <www.nvidia.com>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 /* Tegra124 Clock control functions */
@@ -71,7 +72,7 @@ enum {
  */
 #define CLK(x) CLOCK_ID_ ## x
 static enum clock_id clock_source[CLOCK_TYPE_COUNT][CLOCK_MAX_MUX+1] = {
-	{ CLK(AUDIO),	CLK(XCPU),	CLK(PERIPH),	CLK(CLK_M),
+	{ CLK(AUDIO),	CLK(XCPU),	CLK(PERIPH),	CLK(OSC),
 		CLK(NONE),	CLK(NONE),	CLK(NONE),	CLK(NONE),
 		MASK_BITS_31_30},
 	{ CLK(MEMORY),	CLK(CGENERAL),	CLK(PERIPH),	CLK(AUDIO),

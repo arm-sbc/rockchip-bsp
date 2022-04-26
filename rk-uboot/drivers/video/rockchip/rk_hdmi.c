@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2017 Theobroma Systems Design und Consulting GmbH
  * Copyright (c) 2015 Google, Inc
  * Copyright 2014 Rockchip Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -14,9 +15,10 @@
 #include <regmap.h>
 #include <syscon.h>
 #include <asm/gpio.h>
+#include <asm/hardware.h>
 #include <asm/io.h>
-#include <asm/arch-rockchip/clock.h>
-#include <asm/arch-rockchip/hardware.h>
+#include <asm/arch/clock.h>
+#include <asm/arch/hardware.h>
 #include "rk_hdmi.h"
 #include "rk_vop.h" /* for rk_vop_probe_regulators */
 
@@ -82,7 +84,7 @@ int rk_hdmi_ofdata_to_platdata(struct udevice *dev)
 	struct rk_hdmi_priv *priv = dev_get_priv(dev);
 	struct dw_hdmi *hdmi = &priv->hdmi;
 
-	hdmi->ioaddr = (ulong)dev_read_addr(dev);
+	hdmi->ioaddr = (ulong)devfdt_get_addr(dev);
 	hdmi->mpll_cfg = rockchip_mpll_cfg;
 	hdmi->phy_cfg = rockchip_phy_config;
 
@@ -92,9 +94,6 @@ int rk_hdmi_ofdata_to_platdata(struct udevice *dev)
 	hdmi->phy_set = dw_hdmi_phy_cfg;
 
 	priv->grf = syscon_get_first_range(ROCKCHIP_SYSCON_GRF);
-
-	uclass_get_device_by_phandle(UCLASS_I2C, dev, "ddc-i2c-bus",
-				     &hdmi->ddc_bus);
 
 	return 0;
 }

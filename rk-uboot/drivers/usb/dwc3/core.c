@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /**
  * core.c - DesignWare USB3 DRD Controller Core file
  *
@@ -11,10 +10,13 @@
  * to uboot.
  *
  * commit cd72f890d2 : usb: dwc3: core: enable phy suspend quirk on non-FPGA
+ *
+ * SPDX-License-Identifier:     GPL-2.0
  */
 
 #include <common.h>
 #include <malloc.h>
+#include <fdtdec.h>
 #include <dwc3-uboot.h>
 #include <asm/dma-mapping.h>
 #include <linux/ioport.h>
@@ -28,6 +30,8 @@
 #include "io.h"
 
 #include "linux-compat.h"
+
+DECLARE_GLOBAL_DATA_PTR;
 
 static LIST_HEAD(dwc3_list);
 /* -------------------------------------------------------------------------- */
@@ -330,6 +334,34 @@ static void dwc3_cache_hwparams(struct dwc3 *dwc)
 	parms->hwparams8 = dwc3_readl(dwc->regs, DWC3_GHWPARAMS8);
 }
 
+static void dwc3_hsphy_mode_setup(struct dwc3 *dwc)
+{
+	enum usb_phy_interface hsphy_mode = dwc->hsphy_mode;
+	u32 reg;
+
+	/* Set dwc3 usb2 phy config */
+	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
+
+	switch (hsphy_mode) {
+	case USBPHY_INTERFACE_MODE_UTMI:
+		reg &= ~(DWC3_GUSB2PHYCFG_PHYIF_MASK |
+			DWC3_GUSB2PHYCFG_USBTRDTIM_MASK);
+		reg |= DWC3_GUSB2PHYCFG_PHYIF(UTMI_PHYIF_8_BIT) |
+			DWC3_GUSB2PHYCFG_USBTRDTIM(USBTRDTIM_UTMI_8_BIT);
+		break;
+	case USBPHY_INTERFACE_MODE_UTMIW:
+		reg &= ~(DWC3_GUSB2PHYCFG_PHYIF_MASK |
+			DWC3_GUSB2PHYCFG_USBTRDTIM_MASK);
+		reg |= DWC3_GUSB2PHYCFG_PHYIF(UTMI_PHYIF_16_BIT) |
+			DWC3_GUSB2PHYCFG_USBTRDTIM(USBTRDTIM_UTMI_16_BIT);
+		break;
+	default:
+		break;
+	}
+
+	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
+}
+
 /**
  * dwc3_phy_setup - Configure USB PHY Interface of DWC3 Core
  * @dwc: Pointer to our controller context structure
@@ -375,6 +407,8 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
 
 	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
 
+	dwc3_hsphy_mode_setup(dwc);
+
 	mdelay(100);
 
 	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
@@ -391,6 +425,18 @@ static void dwc3_phy_setup(struct dwc3 *dwc)
 	if (dwc->dis_u2_susphy_quirk)
 		reg &= ~DWC3_GUSB2PHYCFG_SUSPHY;
 
+	if (dwc->dis_enblslpm_quirk)
+		reg &= ~DWC3_GUSB2PHYCFG_ENBLSLPM;
+
+	if (dwc->dis_u2_freeclk_exists_quirk)
+		reg &= ~DWC3_GUSB2PHYCFG_U2_FREECLK_EXISTS;
+
+	if (dwc->usb2_phyif_utmi_width == 16) {
+		reg &= ~(DWC3_GUSB2PHYCFG_PHYIF_MASK |
+			DWC3_GUSB2PHYCFG_USBTRDTIM_MASK);
+		reg |= DWC3_GUSB2PHYCFG_USBTRDTIM(USBTRDTIM_UTMI_16_BIT);
+		reg |= DWC3_GUSB2PHYCFG_PHYIF(UTMI_PHYIF_16_BIT);
+	}
 	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
 
 	mdelay(100);
@@ -440,11 +486,19 @@ static int dwc3_core_init(struct dwc3 *dwc)
 		goto err0;
 	}
 
-	dwc3_phy_setup(dwc);
-
 	ret = dwc3_core_soft_reset(dwc);
 	if (ret)
 		goto err0;
+
+	if (dwc->revision >= DWC3_REVISION_250A) {
+		reg = dwc3_readl(dwc->regs, DWC3_GUCTL1);
+
+		if (dwc->maximum_speed == USB_SPEED_HIGH ||
+		    dwc->maximum_speed == USB_SPEED_FULL)
+			reg |= DWC3_GUCTL1_DEV_FORCE_20_CLK_FOR_30_CLK;
+
+		dwc3_writel(dwc->regs, DWC3_GUCTL1, reg);
+	}
 
 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
 	reg &= ~DWC3_GCTL_SCALEDOWN_MASK;
@@ -515,6 +569,8 @@ static int dwc3_core_init(struct dwc3 *dwc)
 	dwc3_core_num_eps(dwc);
 
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
+
+	dwc3_phy_setup(dwc);
 
 	ret = dwc3_alloc_scratch_buffers(dwc);
 	if (ret)
@@ -637,6 +693,8 @@ int dwc3_uboot_init(struct dwc3_device *dwc3_dev)
 	int			ret;
 
 	void			*mem;
+	const void *blob = gd->fdt_blob;
+	int node;
 
 	mem = devm_kzalloc((struct udevice *)dev,
 			   sizeof(*dwc) + DWC3_ALIGN_MASK, GFP_KERNEL);
@@ -682,6 +740,7 @@ int dwc3_uboot_init(struct dwc3_device *dwc3_dev)
 	dwc->rx_detect_poll_quirk = dwc3_dev->rx_detect_poll_quirk;
 	dwc->dis_u3_susphy_quirk = dwc3_dev->dis_u3_susphy_quirk;
 	dwc->dis_u2_susphy_quirk = dwc3_dev->dis_u2_susphy_quirk;
+	dwc->dis_u1u2_quirk = dwc3_dev->dis_u2_susphy_quirk;
 
 	dwc->tx_de_emphasis_quirk = dwc3_dev->tx_de_emphasis_quirk;
 	if (dwc3_dev->tx_de_emphasis)
@@ -697,7 +756,20 @@ int dwc3_uboot_init(struct dwc3_device *dwc3_dev)
 	dwc->hird_threshold = hird_threshold
 		| (dwc->is_utmi_l1_suspend << 4);
 
+	dwc->hsphy_mode = dwc3_dev->hsphy_mode;
+
 	dwc->index = dwc3_dev->index;
+
+	if (dwc3_dev->usb2_phyif_utmi_width)
+		dwc->usb2_phyif_utmi_width = dwc3_dev->usb2_phyif_utmi_width;
+
+	node = fdt_node_offset_by_compatible(blob, -1,
+			"rockchip,rk3399-xhci");
+	if (node < 0)
+		debug("%s dwc3 node not found\n", __func__);
+	else
+		dwc->usb2_phyif_utmi_width =
+			fdtdec_get_int(blob, node, "snps,phyif-utmi-bits", -1);
 
 	dwc3_cache_hwparams(dwc);
 
@@ -707,9 +779,9 @@ int dwc3_uboot_init(struct dwc3_device *dwc3_dev)
 		return -ENOMEM;
 	}
 
-	if (!IS_ENABLED(CONFIG_USB_DWC3_GADGET))
+	if (IS_ENABLED(CONFIG_USB_DWC3_HOST))
 		dwc->dr_mode = USB_DR_MODE_HOST;
-	else if (!IS_ENABLED(CONFIG_USB_HOST))
+	else if (IS_ENABLED(CONFIG_USB_DWC3_GADGET))
 		dwc->dr_mode = USB_DR_MODE_PERIPHERAL;
 
 	if (dwc->dr_mode == USB_DR_MODE_UNKNOWN)
@@ -908,6 +980,8 @@ void dwc3_of_parse(struct dwc3 *dwc)
 	 */
 	hird_threshold = 12;
 
+	dwc->hsphy_mode = usb_get_phy_mode(dev->node);
+
 	dwc->has_lpm_erratum = dev_read_bool(dev,
 				"snps,has-lpm-erratum");
 	tmp = dev_read_u8_array_ptr(dev, "snps,lpm-nyet-threshold", 1);
@@ -940,6 +1014,10 @@ void dwc3_of_parse(struct dwc3 *dwc)
 				"snps,dis_u3_susphy_quirk");
 	dwc->dis_u2_susphy_quirk = dev_read_bool(dev,
 				"snps,dis_u2_susphy_quirk");
+	dwc->dis_enblslpm_quirk = dev_read_bool(dev,
+				"snps,dis_enblslpm_quirk");
+	dwc->dis_u2_freeclk_exists_quirk = dev_read_bool(dev,
+				"snps,dis-u2-freeclk-exists-quirk");
 	dwc->tx_de_emphasis_quirk = dev_read_bool(dev,
 				"snps,tx_de_emphasis_quirk");
 	tmp = dev_read_u8_array_ptr(dev, "snps,tx_de_emphasis", 1);

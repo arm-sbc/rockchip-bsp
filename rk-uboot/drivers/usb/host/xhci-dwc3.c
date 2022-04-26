@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
  *
  * DWC3 controller driver
  *
  * Author: Ramneek Mehresh<ramneek.mehresh@freescale.com>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
-#include <fdtdec.h>
 #include <generic-phy.h>
 #include <usb.h>
 #include <dwc3-uboot.h>
@@ -18,6 +18,8 @@
 #include <asm/io.h>
 #include <linux/usb/dwc3.h>
 #include <linux/usb/otg.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 struct xhci_dwc3_platdata {
 	struct phy *usb_phys;
@@ -155,7 +157,7 @@ static int xhci_dwc3_probe(struct udevice *dev)
 
 	writel(reg, &dwc3_reg->g_usb2phycfg[0]);
 
-	dr_mode = usb_get_dr_mode(dev_of_offset(dev));
+	dr_mode = usb_get_dr_mode(dev->node);
 	if (dr_mode == USB_DR_MODE_UNKNOWN)
 		/* by default set dual role mode to HOST */
 		dr_mode = USB_DR_MODE_HOST;

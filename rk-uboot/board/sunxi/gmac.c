@@ -12,6 +12,14 @@ void eth_init_board(void)
 	struct sunxi_ccm_reg *const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 
+	/* Set up clock gating */
+#ifdef CONFIG_SUNXI_GEN_SUN6I
+	setbits_le32(&ccm->ahb_reset0_cfg, 0x1 << AHB_RESET_OFFSET_GMAC);
+	setbits_le32(&ccm->ahb_gate0, 0x1 << AHB_GATE_OFFSET_GMAC);
+#else
+	setbits_le32(&ccm->ahb_gate1, 0x1 << AHB_GATE_OFFSET_GMAC);
+#endif
+
 	/* Set MII clock */
 #ifdef CONFIG_RGMII
 	setbits_le32(&ccm->gmac_clk_cfg, CCM_GMAC_CTRL_TX_CLK_SRC_INT_RGMII |
@@ -25,11 +33,7 @@ void eth_init_board(void)
 
 #ifndef CONFIG_MACH_SUN6I
 	/* Configure pin mux settings for GMAC */
-#ifdef CONFIG_SUN7I_GMAC_FORCE_TXERR
-	for (pin = SUNXI_GPA(0); pin <= SUNXI_GPA(17); pin++) {
-#else
 	for (pin = SUNXI_GPA(0); pin <= SUNXI_GPA(16); pin++) {
-#endif
 #ifdef CONFIG_RGMII
 		/* skip unused pins in RGMII mode */
 		if (pin == SUNXI_GPA(9) || pin == SUNXI_GPA(14))

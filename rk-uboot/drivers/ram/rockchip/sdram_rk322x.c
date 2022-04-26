@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause
 /*
  * (C) Copyright 2017 Rockchip Electronics Co., Ltd
+ *
+ * SPDX-License-Identifier:     GPL-2.0
  */
 #include <common.h>
 #include <clk.h>
@@ -11,13 +12,13 @@
 #include <regmap.h>
 #include <syscon.h>
 #include <asm/io.h>
-#include <asm/arch-rockchip/clock.h>
-#include <asm/arch-rockchip/cru_rk322x.h>
-#include <asm/arch-rockchip/grf_rk322x.h>
-#include <asm/arch-rockchip/hardware.h>
-#include <asm/arch-rockchip/sdram_rk322x.h>
-#include <asm/arch-rockchip/uart.h>
-#include <asm/arch-rockchip/sdram_common.h>
+#include <asm/arch/clock.h>
+#include <asm/arch/cru_rk322x.h>
+#include <asm/arch/grf_rk322x.h>
+#include <asm/arch/hardware.h>
+#include <asm/arch/sdram_rk322x.h>
+#include <asm/arch/uart.h>
+#include <asm/arch/sdram.h>
 #include <asm/types.h>
 #include <linux/err.h>
 
@@ -715,34 +716,32 @@ static int rk322x_dmc_ofdata_to_platdata(struct udevice *dev)
 {
 #if !CONFIG_IS_ENABLED(OF_PLATDATA)
 	struct rk322x_sdram_params *params = dev_get_platdata(dev);
-	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(dev);
 	int ret;
 
 	params->num_channels = 1;
 
-	ret = fdtdec_get_int_array(blob, node, "rockchip,pctl-timing",
+	ret = dev_read_u32_array(dev, "rockchip,pctl-timing",
 				   (u32 *)&params->pctl_timing,
 				   sizeof(params->pctl_timing) / sizeof(u32));
 	if (ret) {
 		printf("%s: Cannot read rockchip,pctl-timing\n", __func__);
 		return -EINVAL;
 	}
-	ret = fdtdec_get_int_array(blob, node, "rockchip,phy-timing",
+	ret = dev_read_u32_array(dev, "rockchip,phy-timing",
 				   (u32 *)&params->phy_timing,
 				   sizeof(params->phy_timing) / sizeof(u32));
 	if (ret) {
 		printf("%s: Cannot read rockchip,phy-timing\n", __func__);
 		return -EINVAL;
 	}
-	ret = fdtdec_get_int_array(blob, node, "rockchip,sdram-params",
+	ret = dev_read_u32_array(dev, "rockchip,sdram-params",
 				   (u32 *)&params->base,
 				   sizeof(params->base) / sizeof(u32));
 	if (ret) {
 		printf("%s: Cannot read rockchip,sdram-params\n", __func__);
 		return -EINVAL;
 	}
-	ret = regmap_init_mem(dev_ofnode(dev), &params->map);
+	ret = regmap_init_mem(dev, &params->map);
 	if (ret)
 		return ret;
 #endif

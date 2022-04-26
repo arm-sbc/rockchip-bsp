@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * TI OMAP timer driver
  *
  * Copyright (C) 2015, Texas Instruments, Incorporated
+ *
+ * SPDX-License-Identifier: GPL-2.0+
  */
 
 #include <common.h>
@@ -11,6 +12,8 @@
 #include <timer.h>
 #include <asm/io.h>
 #include <asm/arch/clock.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 /* Timer register bits */
 #define TCLR_START			BIT(0)	/* Start=1 */
@@ -51,7 +54,7 @@ static int omap_timer_get_count(struct udevice *dev, u64 *count)
 {
 	struct omap_timer_priv *priv = dev_get_priv(dev);
 
-	*count = timer_conv_64(readl(&priv->regs->tcrr));
+	*count = readl(&priv->regs->tcrr);
 
 	return 0;
 }
@@ -61,12 +64,10 @@ static int omap_timer_probe(struct udevice *dev)
 	struct timer_dev_priv *uc_priv = dev_get_uclass_priv(dev);
 	struct omap_timer_priv *priv = dev_get_priv(dev);
 
-	if (!uc_priv->clock_rate)
-		uc_priv->clock_rate = TIMER_CLOCK;
+	uc_priv->clock_rate = TIMER_CLOCK;
 
 	/* start the counter ticking up, reload value on overflow */
 	writel(0, &priv->regs->tldr);
-	writel(0, &priv->regs->tcrr);
 	/* enable timer */
 	writel((CONFIG_SYS_PTV << 2) | TCLR_PRE_EN | TCLR_AUTO_RELOAD |
 	       TCLR_START, &priv->regs->tclr);
@@ -104,4 +105,5 @@ U_BOOT_DRIVER(omap_timer) = {
 	.priv_auto_alloc_size = sizeof(struct omap_timer_priv),
 	.probe = omap_timer_probe,
 	.ops	= &omap_timer_ops,
+	.flags = DM_FLAG_PRE_RELOC,
 };

@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2000
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  * (C) Copyright 2015
  * Angelo Dureghello, Sysam Firmware, angelo@sysam.it
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <config.h>
@@ -68,14 +69,12 @@ SECTIONS
 	__ex_table : { *(__ex_table) }
 	__stop___ex_table = .;
 
-	. = ALIGN(4);
+	. = ALIGN(256);
 	__init_begin = .;
 	.text.init : { *(.text.init) }
 	.data.init : { *(.data.init) }
-	. = ALIGN(4);
+	. = ALIGN(256);
 	__init_end = .;
-
-	_end = .;
 
 	__bss_start = .;
 	.bss (NOLOAD)       :

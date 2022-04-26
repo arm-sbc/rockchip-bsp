@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2014, 2015 O.S. Systems Software LTDA.
  * Copyright (C) 2014 Kynetics LLC.
  * Copyright (C) 2014 Revolution Robotics, Inc.
  *
  * Author: Otavio Salvador <otavio@ossystems.com.br>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -19,7 +20,7 @@
 #include <linux/sizes.h>
 #include <common.h>
 #include <watchdog.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <i2c.h>
 #include <mmc.h>
 #include <usb.h>

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2018 Linaro Ltd.
  * Sam Protsenko <semen.protsenko@linaro.org>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <image-android-dt.h>
@@ -53,8 +54,8 @@ bool android_dt_get_fdt_by_index(ulong hdr_addr, u32 index, ulong *addr,
 	entry_size = fdt32_to_cpu(hdr->dt_entry_size);
 	unmap_sysmem(hdr);
 
-	if (index >= entry_count) {
-		printf("Error: index >= dt_entry_count (%u >= %u)\n", index,
+	if (index > entry_count) {
+		printf("Error: index > dt_entry_count (%u > %u)\n", index,
 		       entry_count);
 		return false;
 	}
@@ -78,17 +79,16 @@ static void android_dt_print_fdt_info(const struct fdt_header *fdt)
 {
 	u32 fdt_size;
 	int root_node_off;
-	const char *compatible;
+	const char *compatible = NULL;
 
+	fdt_size = fdt_totalsize(fdt);
 	root_node_off = fdt_path_offset(fdt, "/");
 	if (root_node_off < 0) {
 		printf("Error: Root node not found\n");
-		return;
+	} else {
+		compatible = fdt_getprop(fdt, root_node_off, "compatible",
+					 NULL);
 	}
-
-	fdt_size = fdt_totalsize(fdt);
-	compatible = fdt_getprop(fdt, root_node_off, "compatible",
-				 NULL);
 
 	printf("           (FDT)size = %d\n", fdt_size);
 	printf("     (FDT)compatible = %s\n",
@@ -120,7 +120,7 @@ void android_dt_print_contents(ulong hdr_addr)
 	printf("      dt_entry_count = %d\n", entry_count);
 	printf("   dt_entries_offset = %d\n", entries_offset);
 	printf("           page_size = %d\n", fdt32_to_cpu(hdr->page_size));
-	printf("             version = %d\n", fdt32_to_cpu(hdr->version));
+	printf("             version = %08x\n", fdt32_to_cpu(hdr->version));
 
 	unmap_sysmem(hdr);
 
@@ -155,3 +155,20 @@ void android_dt_print_contents(ulong hdr_addr)
 	}
 }
 #endif
+
+/**
+ * Get dt entry count of DT image structure.
+ *
+ * @param hdr_addr Start address of DT image
+ */
+int android_dt_get_count(ulong hdr_addr)
+{
+	const struct dt_table_header *hdr;
+	int count;
+
+	hdr = map_sysmem(hdr_addr, sizeof(*hdr));
+	count = fdt32_to_cpu(hdr->dt_entry_count);
+	unmap_sysmem(hdr);
+
+	return count;
+}

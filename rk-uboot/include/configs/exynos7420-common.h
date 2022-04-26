@@ -1,8 +1,9 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuration settings for the Espresso7420 board.
  * Copyright (C) 2016 Samsung Electronics
  * Thomas Abraham <thomas.ab@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_EXYNOS7420_COMMON_H
@@ -15,6 +16,8 @@
 
 #include <asm/arch/cpu.h>		/* get chip and board defs */
 #include <linux/sizes.h>
+
+#define CONFIG_ARCH_CPU_INIT
 
 /* Size of malloc() pool before and after relocation */
 #define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + (80 << 20))
@@ -39,6 +42,9 @@
 #define CONFIG_IRAM_SIZE		0x58000
 #define CONFIG_IRAM_END			(CONFIG_IRAM_BASE + CONFIG_IRAM_SIZE)
 #define CPU_RELEASE_ADDR		secondary_boot_addr
+
+/* Number of CPUs available */
+#define CONFIG_CORE_COUNT		0x8
 
 /* select serial console configuration */
 

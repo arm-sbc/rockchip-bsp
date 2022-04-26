@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Configuation settings for the Motorola MC5275EVB board.
  *
@@ -7,6 +6,8 @@
  *
  * Based off of M5272C3 board code by Josef Baumgartner
  * <josef.baumgartner@telex.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -20,6 +21,7 @@
  * High Level Configuration Options
  * (easy to change)
  */
+#define CONFIG_M5275EVB			/* define board type */
 
 #define CONFIG_MCFTMR
 
@@ -45,11 +47,15 @@
  * BOOTP options
  */
 #define CONFIG_BOOTP_BOOTFILESIZE
+#define CONFIG_BOOTP_BOOTPATH
+#define CONFIG_BOOTP_GATEWAY
+#define CONFIG_BOOTP_HOSTNAME
 
 /* Available command configuration */
 
 #define CONFIG_MCFFEC
 #ifdef CONFIG_MCFFEC
+#define CONFIG_MII		1
 #define CONFIG_MII_INIT		1
 #define CONFIG_SYS_DISCOVER_PHY
 #define CONFIG_SYS_RX_ETH_BUFFER	8
@@ -81,6 +87,8 @@
 #define CONFIG_SYS_I2C_PINMUX_REG	(gpio_reg->par_feci2c)
 #define CONFIG_SYS_I2C_PINMUX_CLR	(0xFFF0)
 #define CONFIG_SYS_I2C_PINMUX_SET	(0x000F)
+
+#define CONFIG_SYS_LONGHELP		/* undef to save memory	*/
 
 #define CONFIG_SYS_LOAD_ADDR		0x800000
 
@@ -157,6 +165,8 @@
 #define CONFIG_SYS_MAX_FLASH_SECT	11	/* max number of sectors on one chip */
 #define CONFIG_SYS_FLASH_ERASE_TOUT	1000
 
+#define CONFIG_SYS_FLASH_CFI		1
+#define CONFIG_FLASH_CFI_DRIVER	1
 #define CONFIG_SYS_FLASH_SIZE		0x200000
 
 /*-----------------------------------------------------------------------

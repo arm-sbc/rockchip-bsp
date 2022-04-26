@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -482,11 +483,11 @@ static int pfuze100_regulator_val(struct udevice *dev, int op, int *uV)
 		debug("Set voltage for REGULATOR_TYPE_FIXED regulator\n");
 		return -EINVAL;
 	} else if (desc->volt_table) {
-		for (i = 0; i <= desc->vsel_mask; i++) {
+		for (i = 0; i < desc->vsel_mask; i++) {
 			if (*uV == desc->volt_table[i])
 				break;
 		}
-		if (i == desc->vsel_mask + 1) {
+		if (i == desc->vsel_mask) {
 			debug("Unsupported voltage %u\n", *uV);
 			return -EINVAL;
 		}

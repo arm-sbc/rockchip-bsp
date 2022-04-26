@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Allwinner DW HDMI bridge
  *
  * (C) Copyright 2017 Jernej Skrabec <jernej.skrabec@siol.net>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -132,7 +133,7 @@ static int sunxi_dw_hdmi_wait_for_hpd(void)
 	return -1;
 }
 
-static void sunxi_dw_hdmi_phy_set(uint clock, int phy_div)
+static void sunxi_dw_hdmi_phy_set(uint clock)
 {
 	struct sunxi_hdmi_phy * const phy =
 		(struct sunxi_hdmi_phy *)(SUNXI_HDMI_BASE + HDMI_PHY_OFFS);
@@ -146,7 +147,7 @@ static void sunxi_dw_hdmi_phy_set(uint clock, int phy_div)
 	switch (div) {
 	case 1:
 		writel(0x30dc5fc0, &phy->pll);
-		writel(0x800863C0 | (phy_div - 1), &phy->clk);
+		writel(0x800863C0, &phy->clk);
 		mdelay(10);
 		writel(0x00000001, &phy->unk3);
 		setbits_le32(&phy->pll, BIT(25));
@@ -164,7 +165,7 @@ static void sunxi_dw_hdmi_phy_set(uint clock, int phy_div)
 		break;
 	case 2:
 		writel(0x39dc5040, &phy->pll);
-		writel(0x80084380 | (phy_div - 1), &phy->clk);
+		writel(0x80084381, &phy->clk);
 		mdelay(10);
 		writel(0x00000001, &phy->unk3);
 		setbits_le32(&phy->pll, BIT(25));
@@ -178,7 +179,7 @@ static void sunxi_dw_hdmi_phy_set(uint clock, int phy_div)
 		break;
 	case 4:
 		writel(0x39dc5040, &phy->pll);
-		writel(0x80084340 | (phy_div - 1), &phy->clk);
+		writel(0x80084343, &phy->clk);
 		mdelay(10);
 		writel(0x00000001, &phy->unk3);
 		setbits_le32(&phy->pll, BIT(25));
@@ -192,7 +193,7 @@ static void sunxi_dw_hdmi_phy_set(uint clock, int phy_div)
 		break;
 	case 11:
 		writel(0x39dc5040, &phy->pll);
-		writel(0x80084300 | (phy_div - 1), &phy->clk);
+		writel(0x8008430a, &phy->clk);
 		mdelay(10);
 		writel(0x00000001, &phy->unk3);
 		setbits_le32(&phy->pll, BIT(25));
@@ -207,46 +208,36 @@ static void sunxi_dw_hdmi_phy_set(uint clock, int phy_div)
 	}
 }
 
-static void sunxi_dw_hdmi_pll_set(uint clk_khz, int *phy_div)
+static void sunxi_dw_hdmi_pll_set(uint clk_khz)
 {
-	int value, n, m, div, diff;
-	int best_n = 0, best_m = 0, best_div = 0, best_diff = 0x0FFFFFFF;
+	int value, n, m, div = 0, diff;
+	int best_n = 0, best_m = 0, best_diff = 0x0FFFFFFF;
+
+	div = sunxi_dw_hdmi_get_divider(clk_khz * 1000);
 
 	/*
 	 * Find the lowest divider resulting in a matching clock. If there
 	 * is no match, pick the closest lower clock, as monitors tend to
 	 * not sync to higher frequencies.
 	 */
-	for (div = 1; div <= 16; div++) {
-		int target = clk_khz * div;
+	for (m = 1; m <= 16; m++) {
+		n = (m * div * clk_khz) / 24000;
 
-		if (target < 192000)
-			continue;
-		if (target > 912000)
-			continue;
-
-		for (m = 1; m <= 16; m++) {
-			n = (m * target) / 24000;
-
-			if (n >= 1 && n <= 128) {
-				value = (24000 * n) / m / div;
-				diff = clk_khz - value;
-				if (diff < best_diff) {
-					best_diff = diff;
-					best_m = m;
-					best_n = n;
-					best_div = div;
-				}
+		if ((n >= 1) && (n <= 128)) {
+			value = (24000 * n) / m / div;
+			diff = clk_khz - value;
+			if (diff < best_diff) {
+				best_diff = diff;
+				best_m = m;
+				best_n = n;
 			}
 		}
 	}
 
-	*phy_div = best_div;
-
 	clock_set_pll3_factors(best_m, best_n);
 	debug("dotclock: %dkHz = %dkHz: (24MHz * %d) / %d / %d\n",
-	      clk_khz, (clock_get_pll3() / 1000) / best_div,
-	      best_n, best_m, best_div);
+	      clk_khz, (clock_get_pll3() / 1000) / div,
+	      best_n, best_m, div);
 }
 
 static void sunxi_dw_hdmi_lcdc_init(int mux, const struct display_timing *edid,
@@ -254,7 +245,7 @@ static void sunxi_dw_hdmi_lcdc_init(int mux, const struct display_timing *edid,
 {
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
-	int div = DIV_ROUND_UP(clock_get_pll3(), edid->pixelclock.typ);
+	int div = sunxi_dw_hdmi_get_divider(edid->pixelclock.typ);
 	struct sunxi_lcdc_reg *lcdc;
 
 	if (mux == 0) {
@@ -286,10 +277,8 @@ static void sunxi_dw_hdmi_lcdc_init(int mux, const struct display_timing *edid,
 
 static int sunxi_dw_hdmi_phy_cfg(struct dw_hdmi *hdmi, uint mpixelclock)
 {
-	int phy_div;
-
-	sunxi_dw_hdmi_pll_set(mpixelclock / 1000, &phy_div);
-	sunxi_dw_hdmi_phy_set(mpixelclock, phy_div);
+	sunxi_dw_hdmi_pll_set(mpixelclock/1000);
+	sunxi_dw_hdmi_phy_set(mpixelclock);
 
 	return 0;
 }
@@ -315,11 +304,15 @@ static int sunxi_dw_hdmi_enable(struct udevice *dev, int panel_bpp,
 
 	sunxi_dw_hdmi_lcdc_init(priv->mux, edid, panel_bpp);
 
-	if (edid->flags & DISPLAY_FLAGS_VSYNC_LOW)
-		setbits_le32(&phy->pol, 0x200);
-
-	if (edid->flags & DISPLAY_FLAGS_HSYNC_LOW)
-		setbits_le32(&phy->pol, 0x100);
+	/*
+	 * Condition in original code is a bit weird. This is attempt
+	 * to make it more reasonable and it works. It could be that
+	 * bits and conditions are related and should be separated.
+	 */
+	if (!((edid->flags & DISPLAY_FLAGS_HSYNC_HIGH) &&
+	      (edid->flags & DISPLAY_FLAGS_VSYNC_HIGH))) {
+		setbits_le32(&phy->pol, 0x300);
+	}
 
 	setbits_le32(&phy->ctrl, 0xf << 12);
 
@@ -372,9 +365,6 @@ static int sunxi_dw_hdmi_probe(struct udevice *dev)
 	priv->hdmi.reg_io_width = 1;
 	priv->hdmi.phy_set = sunxi_dw_hdmi_phy_cfg;
 	priv->mux = uc_plat->source_id;
-
-	uclass_get_device_by_phandle(UCLASS_I2C, dev, "ddc-i2c-bus",
-				     &priv->hdmi.ddc_bus);
 
 	dw_hdmi_init(&priv->hdmi);
 

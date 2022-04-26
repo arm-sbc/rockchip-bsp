@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2002
  * Daniel Engström, Omicron Ceti AB, daniel@omicron.se.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -15,7 +16,7 @@ SECTIONS
 	/DISCARD/ : { *(.u_boot_list_2_cmd_*) }
 #endif
 
-	. = IMAGE_TEXT_BASE;	/* Location of bootcode in flash */
+	. = CONFIG_SPL_TEXT_BASE;	/* Location of bootcode in flash */
 	__text_start = .;
 	.text  : { *(.text*); }
 
@@ -35,12 +36,6 @@ SECTIONS
 	. = ALIGN(4);
 	__data_end = .;
 	__init_end = .;
-	. = ALIGN(4);
-	.binman_sym_table : {
-		__binman_sym_start = .;
-		KEEP(*(SORT(.binman_sym*)));
-		__binman_sym_end = .;
-	}
 
         _image_binary_end = .;
 
@@ -60,7 +55,7 @@ SECTIONS
 	/DISCARD/ : { *(.interp*) }
 	/DISCARD/ : { *(.gnu*) }
 
-#if defined(CONFIG_SPL_X86_16BIT_INIT) || defined(CONFIG_TPL_X86_16BIT_INIT)
+#ifdef CONFIG_SPL_X86_16BIT_INIT
 	/*
 	 * The following expressions place the 16-bit Real-Mode code and
 	 * Reset Vector at the end of the Flash ROM

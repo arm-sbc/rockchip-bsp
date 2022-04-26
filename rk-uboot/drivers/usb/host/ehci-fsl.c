@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009, 2011, 2016 Freescale Semiconductor, Inc.
  *
  * (C) Copyright 2008, Excito Elektronik i Sk=E5ne AB
  *
  * Author: Tor Krill tor@excito.com
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <env.h>
 #include <pci.h>
 #include <usb.h>
 #include <asm/io.h>
@@ -98,7 +98,6 @@ static int ehci_fsl_probe(struct udevice *dev)
 	struct usb_ehci *ehci = NULL;
 	struct ehci_hccr *hccr;
 	struct ehci_hcor *hcor;
-	struct ehci_ctrl *ehci_ctrl = &priv->ehci;
 
 	/*
 	 * Get the base address for EHCI controller from the device node
@@ -116,8 +115,6 @@ static int ehci_fsl_probe(struct udevice *dev)
 	hccr = (struct ehci_hccr *)(&ehci->caplength);
 	hcor = (struct ehci_hcor *)
 		((void *)hccr + HC_LENGTH(ehci_readl(&hccr->cr_capbase)));
-
-	ehci_ctrl->has_fsl_erratum_a005275 = has_erratum_a005275();
 
 	if (ehci_fsl_init(priv, ehci, hccr, hcor) < 0)
 		return -ENXIO;
@@ -157,8 +154,6 @@ U_BOOT_DRIVER(ehci_fsl) = {
 int ehci_hcd_init(int index, enum usb_init_type init,
 		struct ehci_hccr **hccr, struct ehci_hcor **hcor)
 {
-	struct ehci_ctrl *ehci_ctrl = container_of(hccr,
-					struct ehci_ctrl, hccr);
 	struct usb_ehci *ehci = NULL;
 
 	switch (index) {
@@ -176,8 +171,6 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 	*hccr = (struct ehci_hccr *)((uint32_t)&ehci->caplength);
 	*hcor = (struct ehci_hcor *)((uint32_t) *hccr +
 			HC_LENGTH(ehci_readl(&(*hccr)->cr_capbase)));
-
-	ehci_ctrl->has_fsl_erratum_a005275 = has_erratum_a005275();
 
 	return ehci_fsl_init(index, ehci, *hccr, *hcor);
 }

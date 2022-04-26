@@ -1,10 +1,11 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * sh_eth.h - Driver for Renesas SuperH ethernet controller.
  *
  * Copyright (C) 2008 - 2012 Renesas Solutions Corp.
  * Copyright (c) 2008 - 2012 Nobuhiro Iwamatsu
  * Copyright (c) 2007 Carlos Munoz <carlos@kenati.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <netdev.h>
@@ -15,20 +16,18 @@
 #if defined(CONFIG_SH)
 /* Malloc returns addresses in the P1 area (cacheable). However we need to
    use area P2 (non-cacheable) */
-#define ADDR_TO_P2(addr)	((((uintptr_t)(addr) & ~0xe0000000) | 0xa0000000))
+#define ADDR_TO_P2(addr)	((((int)(addr) & ~0xe0000000) | 0xa0000000))
 
 /* The ethernet controller needs to use physical addresses */
 #if defined(CONFIG_SH_32BIT)
-#define ADDR_TO_PHY(addr)	((((uintptr_t)(addr) & ~0xe0000000) | 0x40000000))
+#define ADDR_TO_PHY(addr)	((((int)(addr) & ~0xe0000000) | 0x40000000))
 #else
-#define ADDR_TO_PHY(addr)	((uintptr_t)(addr) & ~0xe0000000)
+#define ADDR_TO_PHY(addr)	((int)(addr) & ~0xe0000000)
 #endif
 #elif defined(CONFIG_ARM)
-#ifndef inl
-#define inl	readl
+#define inl		readl
 #define outl	writel
-#endif
-#define ADDR_TO_PHY(addr)	((uintptr_t)(addr))
+#define ADDR_TO_PHY(addr)	((int)(addr))
 #define ADDR_TO_P2(addr)	(addr)
 #endif /* defined(CONFIG_SH) */
 
@@ -91,7 +90,6 @@ struct sh_eth_info {
 	u8 phy_addr;
 	struct eth_device *dev;
 	struct phy_device *phydev;
-	void __iomem *iobase;
 };
 
 struct sh_eth_dev {
@@ -228,6 +226,7 @@ static const u16 sh_eth_offset_gigabit[SH_ETH_MAX_REGISTER_OFFSET] = {
 	[RMII_MII] =  0x0790,
 };
 
+#if defined(SH_ETH_TYPE_RZ)
 static const u16 sh_eth_offset_rz[SH_ETH_MAX_REGISTER_OFFSET] = {
 	[EDSR]	= 0x0000,
 	[EDMR]	= 0x0400,
@@ -255,7 +254,6 @@ static const u16 sh_eth_offset_rz[SH_ETH_MAX_REGISTER_OFFSET] = {
 	[ECMR]	= 0x0500,
 	[ECSR]	= 0x0510,
 	[ECSIPR]	= 0x0518,
-	[PIR]	= 0x0520,
 	[PSR]	= 0x0528,
 	[PIPR]	= 0x052c,
 	[RFLR]	= 0x0508,
@@ -281,6 +279,7 @@ static const u16 sh_eth_offset_rz[SH_ETH_MAX_REGISTER_OFFSET] = {
 	[MAFCR]	= 0x0778,
 	[RMII_MII] =  0x0790,
 };
+#endif
 
 static const u16 sh_eth_offset_fast_sh4[SH_ETH_MAX_REGISTER_OFFSET] = {
 	[ECMR]	= 0x0100,
@@ -349,18 +348,19 @@ static const u16 sh_eth_offset_fast_sh4[SH_ETH_MAX_REGISTER_OFFSET] = {
 #define SH_ETH_TYPE_ETHER
 #define BASE_IO_ADDR	0xfef00000
 #endif
+#elif defined(CONFIG_CPU_SH7724)
+#define SH_ETH_TYPE_ETHER
+#define BASE_IO_ADDR	0xA4600000
 #elif defined(CONFIG_R8A7740)
 #define SH_ETH_TYPE_GETHER
 #define BASE_IO_ADDR	0xE9A00000
-#elif defined(CONFIG_RCAR_GEN2)
+#elif defined(CONFIG_R8A7790) || defined(CONFIG_R8A7791) || \
+	defined(CONFIG_R8A7793) || defined(CONFIG_R8A7794)
 #define SH_ETH_TYPE_ETHER
 #define BASE_IO_ADDR	0xEE700200
 #elif defined(CONFIG_R7S72100)
 #define SH_ETH_TYPE_RZ
 #define BASE_IO_ADDR	0xE8203000
-#elif defined(CONFIG_R8A77980)
-#define SH_ETH_TYPE_GETHER
-#define BASE_IO_ADDR	0xE7400000
 #endif
 
 /*
@@ -377,7 +377,6 @@ enum EDSR_BIT {
 
 /* EDMR */
 enum DMAC_M_BIT {
-	EDMR_NBST	= 0x80, /* DMA transfer burst mode */
 	EDMR_DL1 = 0x20, EDMR_DL0 = 0x10,
 #if defined(SH_ETH_TYPE_GETHER) || defined(SH_ETH_TYPE_RZ)
 	EDMR_SRST	= 0x03, /* Receive/Send reset */
@@ -567,7 +566,8 @@ enum FELIC_MODE_BIT {
 	ECMR_PRM = 0x00000001,
 #ifdef CONFIG_CPU_SH7724
 	ECMR_RTM = 0x00000010,
-#elif defined(CONFIG_RCAR_GEN2) || defined (CONFIG_R8A77980)
+#elif defined(CONFIG_R8A7790) || defined(CONFIG_R8A7791) || \
+	defined(CONFIG_R8A7793) || defined(CONFIG_R8A7794)
 	ECMR_RTM = 0x00000004,
 #endif
 
@@ -654,10 +654,10 @@ enum FIFO_SIZE_BIT {
 	FIFO_SIZE_T = 0x00000700, FIFO_SIZE_R = 0x00000007,
 };
 
-static inline unsigned long sh_eth_reg_addr(struct sh_eth_info *port,
+static inline unsigned long sh_eth_reg_addr(struct sh_eth_dev *eth,
 					    int enum_index)
 {
-#if defined(SH_ETH_TYPE_GETHER) || defined(SH_ETH_TYPE_RZ)
+#if defined(SH_ETH_TYPE_GETHER)
 	const u16 *reg_offset = sh_eth_offset_gigabit;
 #elif defined(SH_ETH_TYPE_ETHER)
 	const u16 *reg_offset = sh_eth_offset_fast_sh4;
@@ -666,17 +666,17 @@ static inline unsigned long sh_eth_reg_addr(struct sh_eth_info *port,
 #else
 #error
 #endif
-	return (unsigned long)port->iobase + reg_offset[enum_index];
+	return BASE_IO_ADDR + reg_offset[enum_index] + 0x800 * eth->port;
 }
 
-static inline void sh_eth_write(struct sh_eth_info *port, unsigned long data,
+static inline void sh_eth_write(struct sh_eth_dev *eth, unsigned long data,
 				int enum_index)
 {
-	outl(data, sh_eth_reg_addr(port, enum_index));
+	outl(data, sh_eth_reg_addr(eth, enum_index));
 }
 
-static inline unsigned long sh_eth_read(struct sh_eth_info *port,
+static inline unsigned long sh_eth_read(struct sh_eth_dev *eth,
 					int enum_index)
 {
-	return inl(sh_eth_reg_addr(port, enum_index));
+	return inl(sh_eth_reg_addr(eth, enum_index));
 }

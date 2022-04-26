@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2010 Samsung Electronics.
  * Minkyu Kang <mk7.kang@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -20,12 +21,12 @@ void *secondary_boot_addr = (void *)_main;
 
 void reset_cpu(ulong addr)
 {
-#ifdef CONFIG_CPU_V7A
+#ifdef CONFIG_CPU_V7
 	writel(0x1, samsung_get_base_swreset());
 #endif
 }
 
-#if !CONFIG_IS_ENABLED(SYS_DCACHE_OFF)
+#ifndef CONFIG_SYS_DCACHE_OFF
 void enable_caches(void)
 {
 	/* Enable D-cache. I-cache is already enabled in start.S */

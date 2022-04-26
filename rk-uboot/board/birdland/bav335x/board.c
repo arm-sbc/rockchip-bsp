@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * board.c
  *
  * Board functions for Birdland Audio BAV335x Network Processor
  *
  * Copyright (c) 2012-2014 Birdland Audio - http://birdland.com/oem
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <env.h>
 #include <errno.h>
 #include <spl.h>
 #include <asm/arch/cpu.h>
@@ -28,8 +28,9 @@
 #include <cpsw.h>
 #include <power/tps65217.h>
 #include <power/tps65910.h>
-#include <env_internal.h>
+#include <environment.h>
 #include <watchdog.h>
+#include <environment.h>
 #include "board.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -359,7 +360,7 @@ static struct cpsw_platform_data cpsw_data = {
  * Build in only these cases to avoid warnings about unused variables
  * when we build an SPL that has neither option but full U-Boot will.
  */
-#if ((defined(CONFIG_SPL_ETH_SUPPORT) || defined(CONFIG_SPL_USB_ETHER)) &&\
+#if ((defined(CONFIG_SPL_ETH_SUPPORT) || defined(CONFIG_SPL_USBETH_SUPPORT)) &&\
 		defined(CONFIG_SPL_BUILD)) || \
 	((defined(CONFIG_DRIVER_TI_CPSW) || \
 	  defined(CONFIG_USB_ETHER) && defined(CONFIG_USB_MUSB_GADGET)) && \

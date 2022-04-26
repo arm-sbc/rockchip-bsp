@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Xilinx Zynq 7000 DTSI
  * Describes the hardware common to all Zynq 7000-based boards.
  *
  *  Copyright (C) 2011 - 2015 Xilinx
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 / {
@@ -49,8 +50,7 @@
 		compatible = "arm,cortex-a9-pmu";
 		interrupts = <0 5 4>, <0 6 4>;
 		interrupt-parent = <&intc>;
-		reg = <0xf8891000 0x1000>,
-		      <0xf8893000 0x1000>;
+		reg = < 0xf8891000 0x1000 0xf8893000 0x1000 >;
 	};
 
 	regulator_vccpint: fixedregulator {
@@ -105,10 +105,10 @@
 		gpio0: gpio@e000a000 {
 			compatible = "xlnx,zynq-gpio-1.0";
 			#gpio-cells = <2>;
+			#interrupt-cells = <2>;
 			clocks = <&clkc 42>;
 			gpio-controller;
 			interrupt-controller;
-			#interrupt-cells = <2>;
 			interrupt-parent = <&intc>;
 			interrupts = <0 20 4>;
 			reg = <0xe000a000 0x1000>;
@@ -213,33 +213,6 @@
 			#size-cells = <0>;
 		};
 
-		smcc: memory-controller@e000e000 {
-			#address-cells = <1>;
-			#size-cells = <1>;
-			status = "disabled";
-			clock-names = "memclk", "apb_pclk";
-			clocks = <&clkc 11>, <&clkc 44>;
-			compatible = "arm,pl353-smc-r2p1", "arm,primecell";
-			interrupt-parent = <&intc>;
-			interrupts = <0 18 4>;
-			ranges ;
-			reg = <0xe000e000 0x1000>;
-			nand0: flash@e1000000 {
-				status = "disabled";
-				compatible = "arm,pl353-nand-r2p1";
-				reg = <0xe1000000 0x1000000>;
-				#address-cells = <1>;
-				#size-cells = <1>;
-			};
-			nor0: flash@e2000000 {
-				status = "disabled";
-				compatible = "cfi-flash";
-				reg = <0xe2000000 0x2000000>;
-				#address-cells = <1>;
-				#size-cells = <1>;
-			};
-		};
-
 		gem0: ethernet@e000b000 {
 			compatible = "cdns,zynq-gem", "cdns,gem";
 			reg = <0xe000b000 0x1000>;
@@ -262,7 +235,7 @@
 			#size-cells = <0>;
 		};
 
-		sdhci0: mmc@e0100000 {
+		sdhci0: sdhci@e0100000 {
 			compatible = "arasan,sdhci-8.9a";
 			status = "disabled";
 			clock-names = "clk_xin", "clk_ahb";
@@ -272,7 +245,7 @@
 			reg = <0xe0100000 0x1000>;
 		};
 
-		sdhci1: mmc@e0101000 {
+		sdhci1: sdhci@e0101000 {
 			compatible = "arasan,sdhci-8.9a";
 			status = "disabled";
 			clock-names = "clk_xin", "clk_ahb";
@@ -348,11 +321,6 @@
 			clocks = <&clkc 12>, <&clkc 15>, <&clkc 16>, <&clkc 17>, <&clkc 18>;
 			clock-names = "ref_clk", "fclk0", "fclk1", "fclk2", "fclk3";
 			syscon = <&slcr>;
-		};
-
-		efuse: efuse@f800d000 {
-			compatible = "xlnx,zynq-efuse";
-			reg = <0xf800d000 0x20>;
 		};
 
 		global_timer: timer@f8f00200 {

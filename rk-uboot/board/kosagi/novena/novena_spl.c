@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Novena SPL
  *
  * Copyright (C) 2014 Marek Vasut <marex@denx.de>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -19,12 +20,14 @@
 #include <asm/arch/crm_regs.h>
 #include <i2c.h>
 #include <mmc.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <spl.h>
 
 #include <asm/arch/mx6-ddr.h>
 
 #include "novena.h"
+
+DECLARE_GLOBAL_DATA_PTR;
 
 #define UART_PAD_CTRL						\
 	(PAD_CTL_PKE | PAD_CTL_PUE |				\
@@ -404,7 +407,7 @@ static inline void novena_spl_setup_iomux_video(void) {}
 /*
  * SPL boots from uSDHC card
  */
-#ifdef CONFIG_FSL_ESDHC_IMX
+#ifdef CONFIG_FSL_ESDHC
 static struct fsl_esdhc_cfg usdhc_cfg = {
 	USDHC3_BASE_ADDR, 0, 4
 };
@@ -566,7 +569,7 @@ void board_init_f(ulong dummy)
 #ifdef CONFIG_BOARD_POSTCLK_INIT
 	board_postclk_init();
 #endif
-#ifdef CONFIG_FSL_ESDHC_IMX
+#ifdef CONFIG_FSL_ESDHC
 	get_clocks();
 #endif
 
@@ -593,4 +596,10 @@ void board_init_f(ulong dummy)
 	udelay(100);
 	mmdc_do_write_level_calibration(&novena_ddr_info);
 	mmdc_do_dqs_calibration(&novena_ddr_info);
+
+	/* Clear the BSS. */
+	memset(__bss_start, 0, __bss_end - __bss_start);
+
+	/* load/boot image from boot device */
+	board_init_r(NULL, 0);
 }

@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Samsung Electronics
  * Przemyslaw Marczak <p.marczak@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <errno.h>
@@ -62,7 +63,7 @@ int exynos_adc_stop(struct udevice *dev)
 
 	/* Stop conversion */
 	cfg = readl(&regs->con1);
-	cfg &= ~ADC_V2_CON1_STC_EN;
+	cfg |= ~ADC_V2_CON1_STC_EN;
 
 	writel(cfg, &regs->con1);
 

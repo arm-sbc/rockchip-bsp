@@ -1,17 +1,16 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000-2009
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <bootm.h>
-#include <env.h>
 #include <fdt_support.h>
 #include <linux/libfdt.h>
 #include <malloc.h>
 #include <vxworks.h>
-#include <tee/optee.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -261,7 +260,7 @@ static int do_bootm_plan9(int flag, int argc, char * const argv[],
 #if defined(CONFIG_BOOTM_VXWORKS) && \
 	(defined(CONFIG_PPC) || defined(CONFIG_ARM))
 
-static void do_bootvx_fdt(bootm_headers_t *images)
+void do_bootvx_fdt(bootm_headers_t *images)
 {
 #if defined(CONFIG_OF_LIBFDT)
 	int ret;
@@ -318,8 +317,8 @@ static void do_bootvx_fdt(bootm_headers_t *images)
 	puts("## vxWorks terminated\n");
 }
 
-int do_bootm_vxworks(int flag, int argc, char * const argv[],
-		     bootm_headers_t *images)
+static int do_bootm_vxworks(int flag, int argc, char * const argv[],
+			     bootm_headers_t *images)
 {
 	if (flag != BOOTM_STATE_OS_GO)
 		return 0;
@@ -434,34 +433,6 @@ static int do_bootm_openrtos(int flag, int argc, char * const argv[],
 }
 #endif
 
-#ifdef CONFIG_BOOTM_OPTEE
-static int do_bootm_tee(int flag, int argc, char * const argv[],
-			bootm_headers_t *images)
-{
-	int ret;
-
-	/* Verify OS type */
-	if (images->os.os != IH_OS_TEE) {
-		return 1;
-	};
-
-	/* Validate OPTEE header */
-	ret = optee_verify_bootm_image(images->os.image_start,
-				       images->os.load,
-				       images->os.image_len);
-	if (ret)
-		return ret;
-
-	/* Locate FDT etc */
-	ret = bootm_find_images(flag, argc, argv);
-	if (ret)
-		return ret;
-
-	/* From here we can run the regular linux boot path */
-	return do_bootm_linux(flag, argc, argv, images);
-}
-#endif
-
 static boot_os_fn *boot_os[] = {
 	[IH_OS_U_BOOT] = do_bootm_standalone,
 #ifdef CONFIG_BOOTM_LINUX
@@ -483,7 +454,7 @@ static boot_os_fn *boot_os[] = {
 	[IH_OS_PLAN9] = do_bootm_plan9,
 #endif
 #if defined(CONFIG_BOOTM_VXWORKS) && \
-	(defined(CONFIG_PPC) || defined(CONFIG_ARM) || defined(CONFIG_RISCV))
+	(defined(CONFIG_PPC) || defined(CONFIG_ARM))
 	[IH_OS_VXWORKS] = do_bootm_vxworks,
 #endif
 #if defined(CONFIG_CMD_ELF)
@@ -495,28 +466,18 @@ static boot_os_fn *boot_os[] = {
 #ifdef CONFIG_BOOTM_OPENRTOS
 	[IH_OS_OPENRTOS] = do_bootm_openrtos,
 #endif
-#ifdef CONFIG_BOOTM_OPTEE
-	[IH_OS_TEE] = do_bootm_tee,
-#endif
 };
 
 /* Allow for arch specific config before we boot */
-__weak void arch_preboot_os(void)
+__weak void arch_preboot_os(uint32_t bootm_state)
 {
 	/* please define platform specific arch_preboot_os() */
-}
-
-/* Allow for board specific config before we boot */
-__weak void board_preboot_os(void)
-{
-	/* please define board specific board_preboot_os() */
 }
 
 int boot_selected_os(int argc, char * const argv[], int state,
 		     bootm_headers_t *images, boot_os_fn *boot_fn)
 {
-	arch_preboot_os();
-	board_preboot_os();
+	arch_preboot_os(state);
 	boot_fn(state, argc, argv, images);
 
 	/* Stand-alone may return when 'autostart' is 'no' */

@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  *
  * Author:
  *	Peng Fan <Peng.Fan@freescale.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -19,13 +20,13 @@ struct mxc_ccm_anatop_reg *ccm_anatop = (struct mxc_ccm_anatop_reg *)
 					 ANATOP_BASE_ADDR;
 struct mxc_ccm_reg *ccm_reg = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 
-#ifdef CONFIG_FSL_ESDHC_IMX
+#ifdef CONFIG_FSL_ESDHC
 DECLARE_GLOBAL_DATA_PTR;
 #endif
 
 int get_clocks(void)
 {
-#ifdef CONFIG_FSL_ESDHC_IMX
+#ifdef CONFIG_FSL_ESDHC
 #if CONFIG_SYS_FSL_ESDHC_ADDR == USDHC2_BASE_ADDR
 	gd->arch.sdhc_clk = mxc_get_clock(MXC_ESDHC2_CLK);
 #elif CONFIG_SYS_FSL_ESDHC_ADDR == USDHC3_BASE_ADDR
@@ -53,7 +54,7 @@ static u32 get_ipg_clk(void)
 
 u32 imx_get_uartclk(void)
 {
-	return get_root_clk(UART_CLK_ROOT);
+	return get_root_clk(UART1_CLK_ROOT);
 }
 
 u32 imx_get_fecclk(void)
@@ -965,15 +966,15 @@ int set_clk_enet(enum enet_freq type)
 	clock_enable(CCGR_ENET2, 0);
 
 	switch (type) {
-	case ENET_125MHZ:
+	case ENET_125MHz:
 		enet1_ref = ENET1_REF_CLK_ROOT_FROM_PLL_ENET_MAIN_125M_CLK;
 		enet2_ref = ENET2_REF_CLK_ROOT_FROM_PLL_ENET_MAIN_125M_CLK;
 		break;
-	case ENET_50MHZ:
+	case ENET_50MHz:
 		enet1_ref = ENET1_REF_CLK_ROOT_FROM_PLL_ENET_MAIN_50M_CLK;
 		enet2_ref = ENET2_REF_CLK_ROOT_FROM_PLL_ENET_MAIN_50M_CLK;
 		break;
-	case ENET_25MHZ:
+	case ENET_25MHz:
 		enet1_ref = ENET1_REF_CLK_ROOT_FROM_PLL_ENET_MAIN_25M_CLK;
 		enet2_ref = ENET2_REF_CLK_ROOT_FROM_PLL_ENET_MAIN_25M_CLK;
 		break;
@@ -1074,7 +1075,7 @@ void clock_init(void)
 	}
 }
 
-#ifdef CONFIG_IMX_HAB
+#ifdef CONFIG_SECURE_BOOT
 void hab_caam_clock_enable(unsigned char enable)
 {
 	if (enable)
@@ -1095,7 +1096,6 @@ void epdc_clock_disable(void)
 }
 #endif
 
-#ifndef CONFIG_SPL_BUILD
 /*
  * Dump some core clockes.
  */
@@ -1131,4 +1131,3 @@ U_BOOT_CMD(
 	"display clocks",
 	""
 );
-#endif

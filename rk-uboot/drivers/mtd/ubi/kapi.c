@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) International Business Machines Corp., 2006
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Author: Artem Bityutskiy (Битюцкий Артём)
  */
@@ -196,7 +197,7 @@ struct ubi_volume_desc *ubi_open_volume(int ubi_num, int vol_id, int mode)
 	desc->mode = mode;
 
 	mutex_lock(&ubi->ckvol_mutex);
-	if (!vol->checked && !vol->skip_check) {
+	if (!vol->checked) {
 		/* This is the first open - check the volume */
 		err = ubi_check_volume(ubi, vol_id);
 		if (err < 0) {

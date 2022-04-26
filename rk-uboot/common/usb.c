@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Most of this source has been derived from the Linux USB
  * project:
@@ -14,6 +13,8 @@
  *
  * Adapted for U-Boot:
  * (C) Copyright 2001 Denis Peter, MPL AG Switzerland
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -439,13 +440,12 @@ static int usb_parse_config(struct usb_device *dev,
 			}
 			break;
 		case USB_DT_ENDPOINT:
-			if (head->bLength != USB_DT_ENDPOINT_SIZE &&
-			    head->bLength != USB_DT_ENDPOINT_AUDIO_SIZE) {
+			if (head->bLength != USB_DT_ENDPOINT_SIZE) {
 				printf("ERROR: Invalid USB EP length (%d)\n",
 					head->bLength);
 				break;
 			}
-			if (index + head->bLength >
+			if (index + USB_DT_ENDPOINT_SIZE >
 			    dev->config.desc.wTotalLength) {
 				puts("USB EP descriptor overflowed buffer!\n");
 				break;

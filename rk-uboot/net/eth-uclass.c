@@ -1,18 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2001-2015
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
  * Joe Hershberger, National Instruments
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
-#include <env.h>
+#include <environment.h>
 #include <net.h>
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
-#include <net/pcap.h>
 #include "eth_internal.h"
+#include <eth_phy.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -308,13 +309,12 @@ void eth_halt(void)
 	struct eth_device_priv *priv;
 
 	current = eth_get_dev();
-	if (!current || !eth_is_active(current))
+	if (!current || !device_active(current))
 		return;
 
 	eth_get_ops(current)->stop(current);
 	priv = current->uclass_priv;
-	if (priv)
-		priv->state = ETH_STATE_PASSIVE;
+	priv->state = ETH_STATE_PASSIVE;
 }
 
 int eth_is_active(struct udevice *dev)
@@ -337,7 +337,7 @@ int eth_send(void *packet, int length)
 	if (!current)
 		return -ENODEV;
 
-	if (!eth_is_active(current))
+	if (!device_active(current))
 		return -EINVAL;
 
 	ret = eth_get_ops(current)->send(current, packet, length);
@@ -345,10 +345,6 @@ int eth_send(void *packet, int length)
 		/* We cannot completely return the error at present */
 		debug("%s: send() returned error %d\n", __func__, ret);
 	}
-#if defined(CONFIG_CMD_PCAP)
-	if (ret >= 0)
-		pcap_post(packet, length, true);
-#endif
 	return ret;
 }
 
@@ -364,7 +360,7 @@ int eth_rx(void)
 	if (!current)
 		return -ENODEV;
 
-	if (!eth_is_active(current))
+	if (!device_active(current))
 		return -EINVAL;
 
 	/* Process up to 32 packets at one time */
@@ -401,7 +397,7 @@ int eth_initialize(void)
 	 * This is accomplished by attempting to probe each device and calling
 	 * their write_hwaddr() operation.
 	 */
-	uclass_first_device_check(UCLASS_ETH, &dev);
+	uclass_first_device(UCLASS_ETH, &dev);
 	if (!dev) {
 		printf("No ethernet found.\n");
 		bootstage_error(BOOTSTAGE_ID_NET_ETH_START);
@@ -430,7 +426,7 @@ int eth_initialize(void)
 
 			eth_write_hwaddr(dev);
 
-			uclass_next_device_check(&dev);
+			uclass_next_device(&dev);
 			num_devices++;
 		} while (dev);
 
@@ -448,6 +444,10 @@ static int eth_post_bind(struct udevice *dev)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_DM_ETH_PHY
+	eth_phy_binds_nodes(dev);
+#endif
+
 	return 0;
 }
 
@@ -458,26 +458,6 @@ static int eth_pre_unbind(struct udevice *dev)
 		eth_set_dev(NULL);
 
 	return 0;
-}
-
-static bool eth_dev_get_mac_address(struct udevice *dev, u8 mac[ARP_HLEN])
-{
-#if IS_ENABLED(CONFIG_OF_CONTROL)
-	const uint8_t *p;
-
-	p = dev_read_u8_array_ptr(dev, "mac-address", ARP_HLEN);
-	if (!p)
-		p = dev_read_u8_array_ptr(dev, "local-mac-address", ARP_HLEN);
-
-	if (!p)
-		return false;
-
-	memcpy(mac, p, ARP_HLEN);
-
-	return true;
-#else
-	return false;
-#endif
 }
 
 static int eth_post_probe(struct udevice *dev)
@@ -501,8 +481,10 @@ static int eth_post_probe(struct udevice *dev)
 			ops->free_pkt += gd->reloc_off;
 		if (ops->stop)
 			ops->stop += gd->reloc_off;
+#ifdef CONFIG_MCAST_TFTP
 		if (ops->mcast)
 			ops->mcast += gd->reloc_off;
+#endif
 		if (ops->write_hwaddr)
 			ops->write_hwaddr += gd->reloc_off;
 		if (ops->read_rom_hwaddr)
@@ -514,13 +496,9 @@ static int eth_post_probe(struct udevice *dev)
 
 	priv->state = ETH_STATE_INIT;
 
-	/* Check if the device has a valid MAC address in device tree */
-	if (!eth_dev_get_mac_address(dev, pdata->enetaddr) ||
-	    !is_valid_ethaddr(pdata->enetaddr)) {
-		/* Check if the device has a MAC address in ROM */
-		if (eth_get_ops(dev)->read_rom_hwaddr)
-			eth_get_ops(dev)->read_rom_hwaddr(dev);
-	}
+	/* Check if the device has a MAC address in ROM */
+	if (eth_get_ops(dev)->read_rom_hwaddr)
+		eth_get_ops(dev)->read_rom_hwaddr(dev);
 
 	eth_env_get_enetaddr_by_index("eth", dev->seq, env_enetaddr);
 	if (!is_zero_ethaddr(env_enetaddr)) {
@@ -553,8 +531,6 @@ static int eth_post_probe(struct udevice *dev)
 #endif
 	}
 
-	eth_write_hwaddr(dev);
-
 	return 0;
 }
 
@@ -570,8 +546,8 @@ static int eth_pre_remove(struct udevice *dev)
 	return 0;
 }
 
-UCLASS_DRIVER(eth) = {
-	.name		= "eth",
+UCLASS_DRIVER(ethernet) = {
+	.name		= "ethernet",
 	.id		= UCLASS_ETH,
 	.post_bind	= eth_post_bind,
 	.pre_unbind	= eth_pre_unbind,

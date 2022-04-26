@@ -374,8 +374,12 @@ int spi_mem_exec_op(struct spi_slave *slave, const struct spi_mem_op *op)
 
 	/* 2nd transfer: rx or tx data path */
 	if (tx_buf || rx_buf) {
+		flag = SPI_XFER_END;
+		if (slave->mode & SPI_DMA_PREPARE)
+			flag |= SPI_XFER_PREPARE;
+
 		ret = spi_xfer(slave, op->data.nbytes * 8, tx_buf,
-			       rx_buf, SPI_XFER_END);
+			       rx_buf, flag);
 		if (ret)
 			return ret;
 	}
@@ -430,14 +434,12 @@ int spi_mem_adjust_op_size(struct spi_slave *slave, struct spi_mem_op *op)
 		if (slave->max_write_size && len > slave->max_write_size)
 			return -EINVAL;
 
-		if (op->data.dir == SPI_MEM_DATA_IN) {
-			if (slave->max_read_size)
-				op->data.nbytes = min(op->data.nbytes,
+		if (op->data.dir == SPI_MEM_DATA_IN && slave->max_read_size)
+			op->data.nbytes = min(op->data.nbytes,
 					      slave->max_read_size);
-		} else if (slave->max_write_size) {
+		else if (slave->max_write_size)
 			op->data.nbytes = min(op->data.nbytes,
 					      slave->max_write_size - len);
-		}
 
 		if (!op->data.nbytes)
 			return -EINVAL;

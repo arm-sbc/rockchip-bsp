@@ -1,10 +1,11 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2001
  * Denis Peter, MPL AG Switzerland
  *
  * Adapted for U-Boot driver model
  * (C) Copyright 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  * Note: Part of this code has been derived from linux
  *
  */
@@ -1049,6 +1050,7 @@ int usb_emul_find(struct udevice *bus, ulong pipe, int port1,
 /**
  * usb_emul_find_for_dev() - Find an emulator for a particular device
  *
+ * @bus:	USB bus (controller)
  * @dev:	USB device to check
  * @emulp:	Returns pointer to emulator, or NULL if not found
  * @return 0 if found, -ve on error

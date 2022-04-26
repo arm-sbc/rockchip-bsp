@@ -32,6 +32,7 @@ config X86_RUN_32BIT
 config X86_RUN_64BIT
 	bool "64-bit"
 	select X86_64
+	select SUPPORT_SPL
 	select SPL
 	select SPL_SEPARATE_BSS
 	help
@@ -107,15 +108,12 @@ source "board/intel/Kconfig"
 
 # platform-specific options below
 source "arch/x86/cpu/baytrail/Kconfig"
-source "arch/x86/cpu/braswell/Kconfig"
 source "arch/x86/cpu/broadwell/Kconfig"
 source "arch/x86/cpu/coreboot/Kconfig"
 source "arch/x86/cpu/ivybridge/Kconfig"
-source "arch/x86/cpu/efi/Kconfig"
 source "arch/x86/cpu/qemu/Kconfig"
 source "arch/x86/cpu/quark/Kconfig"
 source "arch/x86/cpu/queensbay/Kconfig"
-source "arch/x86/cpu/slimbootloader/Kconfig"
 source "arch/x86/cpu/tangier/Kconfig"
 
 # architecture-specific options below
@@ -177,16 +175,9 @@ config X86_16BIT_INIT
 config SPL_X86_16BIT_INIT
 	bool
 	depends on X86_RESET_VECTOR
-	default y if X86_RESET_VECTOR && SPL && !TPL
+	default y if X86_RESET_VECTOR && SPL
 	help
 	  This is enabled when 16-bit init is in SPL
-
-config TPL_X86_16BIT_INIT
-	bool
-	depends on X86_RESET_VECTOR
-	default y if X86_RESET_VECTOR && TPL
-	help
-	  This is enabled when 16-bit init is in TPL
 
 config X86_32BIT_INIT
 	bool
@@ -206,6 +197,11 @@ config RESET_SEG_START
 	hex
 	depends on X86_RESET_VECTOR
 	default 0xffff0000
+
+config RESET_SEG_SIZE
+	hex
+	depends on X86_RESET_VECTOR
+	default 0x10000
 
 config RESET_VEC_LOC
 	hex
@@ -340,17 +336,9 @@ config INTEL_ME_FILE
 	  The filename of the file to use as Intel Management Engine in the
 	  board directory.
 
-config USE_HOB
-	bool "Use HOB (Hand-Off Block)"
-	help
-	  Select this option to access HOB (Hand-Off Block) data structures
-	  and parse HOBs. This HOB infra structure can be reused with
-	  different solutions across different platforms.
-
 config HAVE_FSP
 	bool "Add an Firmware Support Package binary"
 	depends on !EFI
-	select USE_HOB
 	help
 	  Select this option to add an Firmware Support Package binary to
 	  the resulting U-Boot image. It is a binary blob which U-Boot uses
@@ -359,40 +347,9 @@ config HAVE_FSP
 	  Note: Without this binary U-Boot will not be able to set up its
 	  SDRAM so will not boot.
 
-config USE_CAR
-	bool "Use Cache-As-RAM (CAR) to get temporary RAM at start-up"
-	default y if !HAVE_FSP
-	help
-	  Select this option if your board uses CAR init code, typically in a
-	  car.S file, to get some initial memory for code execution. This is
-	  common with Intel CPUs which don't use FSP.
-
-choice
-	prompt "FSP version"
-	depends on HAVE_FSP
-	default FSP_VERSION1
-	help
-	  Selects the FSP version to use. Intel has published several versions
-	  of the FSP External Architecture Specification and this allows
-	  selection of the version number used by a particular SoC.
-
-config FSP_VERSION1
-	bool "FSP version 1.x"
-	help
-	  This covers versions 1.0 and 1.1a. See here for details:
-	  https://github.com/IntelFsp/fsp/wiki
-
-config FSP_VERSION2
-	bool "FSP version 2.x"
-	help
-	  This covers versions 2.0 and 2.1. See here for details:
-	  https://github.com/IntelFsp/fsp/wiki
-
-endchoice
-
 config FSP_FILE
 	string "Firmware Support Package binary filename"
-	depends on FSP_VERSION1
+	depends on HAVE_FSP
 	default "fsp.bin"
 	help
 	  The filename of the file to use as Firmware Support Package binary
@@ -400,7 +357,7 @@ config FSP_FILE
 
 config FSP_ADDR
 	hex "Firmware Support Package binary location"
-	depends on FSP_VERSION1
+	depends on HAVE_FSP
 	default 0xfffc0000
 	help
 	  FSP is not Position Independent Code (PIC) and the whole FSP has to
@@ -413,7 +370,7 @@ config FSP_ADDR
 
 config FSP_TEMP_RAM_ADDR
 	hex
-	depends on FSP_VERSION1
+	depends on HAVE_FSP
 	default 0x2000000
 	help
 	  Stack top address which is used in fsp_init() after DRAM is ready and
@@ -421,14 +378,14 @@ config FSP_TEMP_RAM_ADDR
 
 config FSP_SYS_MALLOC_F_LEN
 	hex
-	depends on FSP_VERSION1
+	depends on HAVE_FSP
 	default 0x100000
 	help
 	  Additional size of malloc() pool before relocation.
 
 config FSP_USE_UPD
 	bool
-	depends on FSP_VERSION1
+	depends on HAVE_FSP
 	default y
 	help
 	  Most FSPs use UPD data region for some FSP customization. But there
@@ -437,13 +394,22 @@ config FSP_USE_UPD
 
 config FSP_BROKEN_HOB
 	bool
-	depends on FSP_VERSION1
+	depends on HAVE_FSP
 	help
 	  Indicate some buggy FSPs that does not report memory used by FSP
 	  itself as reserved in the resource descriptor HOB. Select this to
 	  tell U-Boot to do some additional work to ensure U-Boot relocation
 	  do not overwrite the important boot service data which is used by
 	  FSP, otherwise the subsequent call to fsp_notify() will fail.
+
+config FSP_LOCKDOWN_SPI
+	bool
+	depends on HAVE_FSP
+	help
+	  Some Intel FSP (like Braswell) does SPI lock-down during the call
+	  to fsp_notify(INIT_PHASE_BOOT). This option should be turned on
+	  for such FSP and U-Boot will configure the SPI opcode registers
+	  before the lock-down.
 
 config ENABLE_MRC_CACHE
 	bool "Enable MRC cache"
@@ -455,8 +421,8 @@ config ENABLE_MRC_CACHE
 
 	  For platforms that use Intel FSP for the memory initialization,
 	  please check FSP output HOB via U-Boot command 'fsp hob' to see
-	  if there is FSP_NON_VOLATILE_STORAGE_HOB_GUID (asm/fsp1/fsp_hob.h).
-	  If such GUID does not exist, MRC cache is not available on such
+	  if there is FSP_NON_VOLATILE_STORAGE_HOB_GUID (asm/fsp/fsp_hob.h).
+	  If such GUID does not exist, MRC cache is not avaiable on such
 	  platform (eg: Intel Queensbay), which means selecting this option
 	  here does not make any difference.
 
@@ -593,48 +559,6 @@ config VGA_BIOS_ADDR
 	  address of 0xfff90000 indicates that the image will be put at offset
 	  0x90000 from the beginning of a 1MB flash device.
 
-config HAVE_VBT
-	bool "Add a Video BIOS Table (VBT) image"
-	depends on FSP_VERSION1
-	help
-	  Select this option if you have a Video BIOS Table (VBT) image that
-	  you would like to add to your ROM. This is normally required if you
-	  are using an Intel FSP firmware that is complaint with spec 1.1 or
-	  later to initialize the integrated graphics device (IGD).
-
-	  Video BIOS Table, or VBT, provides platform and board specific
-	  configuration information to the driver that is not discoverable
-	  or available through other means. By other means the most used
-	  method here is to read EDID table from the attached monitor, over
-	  Display Data Channel (DDC) using two pin I2C serial interface. VBT
-	  configuration is related to display hardware and is available via
-	  the ACPI OpRegion or, on older systems, in the PCI ROM (Option ROM).
-
-config VBT_FILE
-	string "Video BIOS Table (VBT) image filename"
-	depends on HAVE_VBT
-	default "vbt.bin"
-	help
-	  The filename of the file to use as Video BIOS Table (VBT) image
-	  in the board directory.
-
-config VBT_ADDR
-	hex "Video BIOS Table (VBT) image location"
-	depends on HAVE_VBT
-	default 0xfff90000
-	help
-	  The location of Video BIOS Table (VBT) image in the SPI flash. For
-	  example, base address of 0xfff90000 indicates that the image will
-	  be put at offset 0x90000 from the beginning of a 1MB flash device.
-
-config VIDEO_FSP
-	bool "Enable FSP framebuffer driver support"
-	depends on HAVE_VBT && DM_VIDEO
-	help
-	  Turn on this option to enable a framebuffer driver when U-Boot is
-	  using Video BIOS Table (VBT) image for FSP firmware to initialize
-	  the integrated graphics device.
-
 config ROM_TABLE_ADDR
 	hex
 	default 0xf0000
@@ -698,7 +622,6 @@ endmenu
 
 config HAVE_ACPI_RESUME
 	bool "Enable ACPI S3 resume"
-	select ENABLE_MRC_CACHE
 	help
 	  Select this to enable ACPI S3 resume. S3 is an ACPI-defined sleeping
 	  state where all system context is lost except system memory. U-Boot
@@ -712,6 +635,7 @@ config HAVE_ACPI_RESUME
 config S3_VGA_ROM_RUN
 	bool "Re-run VGA option ROMs on S3 resume"
 	depends on HAVE_ACPI_RESUME
+	default y if HAVE_ACPI_RESUME
 	help
 	  Execute VGA option ROMs in U-Boot when resuming from S3. Normally
 	  this is needed when graphics console is being used in the kernel.
@@ -770,27 +694,12 @@ config PCIE_ECAM_SIZE
 	  maximum number of PCI buses as defined by the PCI specification.
 
 config I8259_PIC
-	bool "Enable Intel 8259 compatible interrupt controller"
+	bool
 	default y
 	help
 	  Intel 8259 ISA compatible chipset incorporates two 8259 (master and
 	  slave) interrupt controllers. Include this to have U-Boot set up
 	  the interrupt correctly.
-
-config APIC
-	bool "Enable Intel Advanced Programmable Interrupt Controller"
-	default y
-	help
-	  The (A)dvanced (P)rogrammable (I)nterrupt (C)ontroller is responsible
-	  for catching interrupts and distributing them to one or more CPU
-	  cores. In most cases there are some LAPICs (local) for each core and
-	  one I/O APIC. This conjunction is found on most modern x86 systems.
-
-config PINCTRL_ICH6
-	bool
-	help
-	  Intel ICH6 compatible chipset pinctrl driver. It needs to work
-	  together with the ICH6 compatible gpio driver.
 
 config I8254_TIMER
 	bool
@@ -822,5 +731,7 @@ config HIGH_TABLE_SIZE
 
 	  Increse it if the default size does not fit the board's needs.
 	  This is most likely due to a large ACPI DSDT table is used.
+
+source "arch/x86/lib/efi/Kconfig"
 
 endmenu

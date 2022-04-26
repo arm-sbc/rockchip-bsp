@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009
  * Graeme Russ, <graeme.russ@gmail.com>
@@ -17,6 +16,8 @@
  *
  * (C) Copyright 2001
  * Josh Huber, Mission Critical Linux, Inc, <huber@mclx.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -64,8 +65,7 @@ void irq_install_handler(int irq, interrupt_handler_t *handler, void *arg)
 	irq_handlers[irq].arg = arg;
 	irq_handlers[irq].count = 0;
 
-	if (CONFIG_IS_ENABLED(I8259_PIC))
-		unmask_irq(irq);
+	unmask_irq(irq);
 
 	if (status)
 		enable_interrupts();
@@ -84,8 +84,7 @@ void irq_free_handler(int irq)
 
 	status = disable_interrupts();
 
-	if (CONFIG_IS_ENABLED(I8259_PIC))
-		mask_irq(irq);
+	mask_irq(irq);
 
 	irq_handlers[irq].handler = NULL;
 	irq_handlers[irq].arg = NULL;
@@ -106,16 +105,14 @@ void do_irq(int hw_irq)
 	}
 
 	if (irq_handlers[irq].handler) {
-		if (CONFIG_IS_ENABLED(I8259_PIC))
-			mask_irq(irq);
+		mask_irq(irq);
 
 		irq_handlers[irq].handler(irq_handlers[irq].arg);
 		irq_handlers[irq].count++;
 
-		if (CONFIG_IS_ENABLED(I8259_PIC)) {
-			unmask_irq(irq);
-			specific_eoi(irq);
-		}
+		unmask_irq(irq);
+		specific_eoi(irq);
+
 	} else {
 		if ((irq & 7) != 7) {
 			spurious_irq_cnt++;

@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2012 The Chromium OS Authors.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __TRACE_H
@@ -39,7 +40,7 @@ struct trace_output_func {
 /* A header at the start of the trace output buffer */
 struct trace_output_hdr {
 	enum trace_chunk_type type;	/* Record type */
-	size_t rec_count;		/* Number of records */
+	uint32_t rec_count;		/* Number of records */
 };
 
 /* Print statistics about traced function calls */
@@ -57,7 +58,7 @@ void trace_print_stats(void);
  * @param needed	Returns number of bytes used / needed
  * @return 0 if ok, -1 on error (buffer exhausted)
  */
-int trace_list_functions(void *buff, size_t buff_size, size_t *needed);
+int trace_list_functions(void *buff, int buff_size, unsigned *needed);
 
 /* Flags for ftrace_record */
 enum ftrace_flags {
@@ -77,7 +78,7 @@ struct trace_call {
 	uint32_t flags;		/* Flags and timestamp */
 };
 
-int trace_list_calls(void *buff, size_t buff_size, size_t *needed);
+int trace_list_calls(void *buff, int buff_size, unsigned int *needed);
 
 /**
  * Turn function tracing on and off

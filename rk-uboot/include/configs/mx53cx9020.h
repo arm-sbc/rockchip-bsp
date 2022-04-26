@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015  Beckhoff Automation GmbH & Co. KG
  * Patrick Bruenn <p.bruenn@beckhoff.com>
@@ -7,6 +6,8 @@
  *
  * Based on Freescale's Linux i.MX mx53loco.h file:
  * Copyright (C) 2010-2011 Freescale Semiconductor.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
@@ -23,6 +24,7 @@
 /* Size of malloc() pool */
 #define CONFIG_SYS_MALLOC_LEN		(10 * 1024 * 1024)
 
+#define CONFIG_MXC_GPIO
 #define CONFIG_REVISION_TAG
 
 #define CONFIG_MXC_UART_BASE UART2_BASE
@@ -30,27 +32,33 @@
 #define CONFIG_FPGA_COUNT 1
 
 /* MMC Configs */
+#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 #define CONFIG_SYS_FSL_ESDHC_NUM	2
 
 /* bootz: zImage/initrd.img support */
 
 /* Eth Configs */
+#define CONFIG_MII
 #define IMX_FEC_BASE	FEC_BASE_ADDR
 #define CONFIG_ETHPRIME		"FEC0"
 #define CONFIG_FEC_MXC_PHYADDR	0x1F
 
 /* USB Configs */
+#define CONFIG_USB_EHCI_MX5
 #define CONFIG_MXC_USB_PORT	1
 #define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
 #define CONFIG_MXC_USB_FLAGS	0
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
+#define CONFIG_CONS_INDEX		1
 
 /* Command definition */
+#define CONFIG_SUPPORT_RAW_INITRD
 
 #define CONFIG_LOADADDR		0x70010000	/* loadaddr env var */
+#define CONFIG_SYS_TEXT_BASE    0x77800000
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"fdt_addr_r=0x71ff0000\0" \
@@ -130,6 +138,8 @@
 #define CONFIG_ARP_TIMEOUT	200UL
 
 /* Miscellaneous configurable options */
+#define CONFIG_SYS_LONGHELP	/* undef to save memory */
+#define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
 
 #define CONFIG_SYS_MEMTEST_START       0x70000000
@@ -137,7 +147,10 @@
 
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 
+#define CONFIG_CMDLINE_EDITING
+
 /* Physical Memory Map */
+#define CONFIG_NR_DRAM_BANKS	2
 #define PHYS_SDRAM_1			CSD0_BASE_ADDR
 #define PHYS_SDRAM_1_SIZE		(gd->bd->bi_dram[0].size)
 #define PHYS_SDRAM_2			CSD1_BASE_ADDR
@@ -159,6 +172,13 @@
 #define CONFIG_SYS_MMC_ENV_DEV 0
 
 /* Framebuffer and LCD */
-#define CONFIG_IMX_VIDEO_SKIP
+#define CONFIG_PREBOOT
+#define CONFIG_VIDEO_IPUV3
+#define CONFIG_SYS_CONSOLE_OVERWRITE_ROUTINE
+#define CONFIG_VIDEO_BMP_RLE8
+#define CONFIG_SPLASH_SCREEN
+#define CONFIG_BMP_16BPP
+#define CONFIG_VIDEO_LOGO
+#define CONFIG_IPUV3_CLK	200000000
 
 #endif /* __CONFIG_H */

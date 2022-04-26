@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2011
  * Stefan Herbrechtsmeier <stefan@herbrechtsmeier.net>
@@ -7,6 +6,8 @@
  * (C) Copyright 2009
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Prafulla Wadaskar <prafulla@marvell.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _CONFIG_DNS325_H
@@ -27,6 +28,8 @@
 /*
  * Commands configuration
  */
+
+#define CONFIG_NR_DRAM_BANKS		1
 
 /*
  * mv-common.h should be defined after CMD configs since it used them
@@ -53,6 +56,13 @@
 #endif
 
 /*
+ * RTC driver configuration
+ */
+#ifdef CONFIG_CMD_DATE
+#define CONFIG_RTC_MV
+#endif
+
+/*
  * Enable GPI0 support
  */
 #define CONFIG_KIRKWOOD_GPIO
@@ -71,6 +81,10 @@
 /*
  * Default environment variables
  */
+#define MTDIDS_DEFAULT			"nand0=orion_nand"
+
+#define MTDPARTS_DEFAULT		"mtdparts=orion_nand:" \
+	"896k(u-boot),128k(u-boot-env),5m(kernel),-(rootfs)\0"
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"stdin=serial\0" \
@@ -79,7 +93,7 @@
 	"loadaddr=0x800000\0" \
 	"autoload=no\0" \
 	"console=ttyS0,115200\0" \
-	"mtdparts="CONFIG_MTDPARTS_DEFAULT \
+	"mtdparts="MTDPARTS_DEFAULT \
 	"optargs=\0" \
 	"bootenv=uEnv.txt\0" \
 	"importbootenv=echo Importing environment ...; " \

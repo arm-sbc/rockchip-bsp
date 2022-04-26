@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -66,7 +67,7 @@ int spi_flash_probe_bus_cs(unsigned int busnum, unsigned int cs,
 	char *str;
 	int ret;
 
-#if defined(CONFIG_SPL_BUILD) && CONFIG_IS_ENABLED(USE_TINY_PRINTF)
+#if defined(CONFIG_SPL_BUILD) && defined(CONFIG_USE_TINY_PRINTF)
 	str = "spi_flash";
 #else
 	char name[30];

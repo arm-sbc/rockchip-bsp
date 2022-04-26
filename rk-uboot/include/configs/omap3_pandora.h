@@ -1,25 +1,53 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2008-2010
  * Gražvydas Ignotas <notasas@gmail.com>
  *
  * Configuration settings for the OMAP3 Pandora.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#define CONFIG_NR_DRAM_BANKS	2	/* CS1 may or may not be populated */
+
 /* override base for compatibility with MLO the device ships with */
+#define CONFIG_SYS_TEXT_BASE		0x80008000
 
 #include <configs/ti_omap3_common.h>
 
+#define CONFIG_MISC_INIT_R
 #define CONFIG_REVISION_TAG		1
+
+#define CONFIG_ENV_SIZE			(128 << 10)	/* 128 KiB */
 
 #define CONFIG_SYS_DEVICE_NULLDEV	1
 
 /*
+ * Hardware drivers
+ */
+
+/* TWL4030 LED */
+#define CONFIG_TWL4030_LED
+
+/*
+ * NS16550 Configuration
+ */
+#undef CONFIG_SYS_NS16550_CLK
+#define CONFIG_SYS_NS16550_SERIAL
+#define CONFIG_SYS_NS16550_REG_SIZE	(-4)
+#define CONFIG_SYS_NS16550_CLK		V_NS16550_CLK
+#define CONFIG_SYS_NS16550_COM3		OMAP34XX_UART3
+#define CONFIG_SERIAL3			3
+
+/* commands to include */
+
+/*
  * Board NAND Info.
  */
+#define CONFIG_SYS_NAND_ADDR		NAND_BASE	/* physical address */
+							/* to access nand */
 #define CONFIG_NAND_OMAP_ECCSCHEME	OMAP_ECC_HAM1_CODE_SW
 #define CONFIG_SYS_NAND_PAGE_SIZE	2048
 #define CONFIG_SYS_NAND_OOBSIZE		64
@@ -44,7 +72,7 @@
 	"usbtty=cdc_acm\0" \
 	"bootargs_ubi=ubi.mtd=4 ubi.mtd=3 root=ubi0:rootfs rootfstype=ubifs " \
 		"rw rootflags=bulk_read vram=6272K omapfb.vram=0:3000K\0" \
-	"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0" \
+	"mtdparts=" MTDPARTS_DEFAULT "\0" \
 	BOOTENV \
 
 /* memtest works on */
@@ -59,8 +87,10 @@
 /* Monitor at start of flash */
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_FLASH_BASE
 
+#define SMNAND_ENV_OFFSET		0x260000 /* environment starts here */
 
 #define CONFIG_SYS_ENV_SECT_SIZE	(128 << 10)	/* 128 KiB */
-#define CONFIG_ENV_ADDR			0x260000
+#define CONFIG_ENV_OFFSET		SMNAND_ENV_OFFSET
+#define CONFIG_ENV_ADDR			SMNAND_ENV_OFFSET
 
 #endif				/* __CONFIG_H */

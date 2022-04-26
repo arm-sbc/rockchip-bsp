@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * PCI autoconfiguration library
  *
  * Author: Matt Porter <mporter@mvista.com>
  *
  * Copyright 2000 MontaVista Software Inc.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -39,8 +40,6 @@ void dm_pciauto_setup_device(struct udevice *dev, int bars_num,
 
 	for (bar = PCI_BASE_ADDRESS_0;
 	     bar < PCI_BASE_ADDRESS_0 + (bars_num * 4); bar += 4) {
-		int ret = 0;
-
 		/* Tickle the BAR and get the response */
 		if (!enum_only)
 			dm_pci_write_config32(dev, bar, 0xffffffff);
@@ -99,13 +98,8 @@ void dm_pciauto_setup_device(struct udevice *dev, int bars_num,
 			      (unsigned long long)bar_size);
 		}
 
-		if (!enum_only) {
-			ret = pciauto_region_allocate(bar_res, bar_size,
-						      &bar_value, found_mem64);
-			if (ret)
-				printf("PCI: Failed autoconfig bar %x\n", bar);
-		}
-		if (!enum_only && !ret) {
+		if (!enum_only && pciauto_region_allocate(bar_res, bar_size,
+							  &bar_value) == 0) {
 			/* Write it out and update our limit */
 			dm_pci_write_config32(dev, bar, (u32)bar_value);
 
@@ -147,8 +141,7 @@ void dm_pciauto_setup_device(struct udevice *dev, int bars_num,
 				debug("PCI Autoconfig: ROM, size=%#x, ",
 				      (unsigned int)bar_size);
 				if (pciauto_region_allocate(mem, bar_size,
-							    &bar_value,
-							    false) == 0) {
+							    &bar_value) == 0) {
 					dm_pci_write_config32(dev, rom_addr,
 							      bar_value);
 				}
@@ -188,8 +181,8 @@ void dm_pciauto_prescan_setup_bridge(struct udevice *dev, int sub_bus)
 
 	/* Configure bus number registers */
 	dm_pci_write_config8(dev, PCI_PRIMARY_BUS,
-			     PCI_BUS(dm_pci_get_bdf(dev)) - ctlr->seq);
-	dm_pci_write_config8(dev, PCI_SECONDARY_BUS, sub_bus - ctlr->seq);
+			     PCI_BUS(dm_pci_get_bdf(dev)));
+	dm_pci_write_config8(dev, PCI_SECONDARY_BUS, sub_bus);
 	dm_pci_write_config8(dev, PCI_SUBORDINATE_BUS, 0xff);
 
 	if (pci_mem) {
@@ -264,7 +257,7 @@ void dm_pciauto_postscan_setup_bridge(struct udevice *dev, int sub_bus)
 	pci_io = ctlr_hose->pci_io;
 
 	/* Configure bus number registers */
-	dm_pci_write_config8(dev, PCI_SUBORDINATE_BUS, sub_bus - ctlr->seq);
+	dm_pci_write_config8(dev, PCI_SUBORDINATE_BUS, sub_bus);
 
 	if (pci_mem) {
 		/* Round memory allocator to 1MB boundary */
@@ -365,8 +358,7 @@ int dm_pciauto_config_device(struct udevice *dev)
 		      PCI_DEV(dm_pci_get_bdf(dev)));
 		break;
 #endif
-#if defined(CONFIG_ARCH_MPC834X) && !defined(CONFIG_TARGET_VME8349) && \
-		!defined(CONFIG_TARGET_CADDY2)
+#if defined(CONFIG_MPC834x) && !defined(CONFIG_VME8349)
 	case PCI_CLASS_BRIDGE_OTHER:
 		/*
 		 * The host/PCI bridge 1 seems broken in 8349 - it presents

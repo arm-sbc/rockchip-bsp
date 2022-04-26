@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2000-2004
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef BLK_H
@@ -31,16 +32,28 @@ enum if_type {
 	IF_TYPE_SD,
 	IF_TYPE_SATA,
 	IF_TYPE_HOST,
+	IF_TYPE_SYSTEMACE,
 	IF_TYPE_NVME,
-	IF_TYPE_EFI,
-	IF_TYPE_VIRTIO,
-
+	IF_TYPE_RKNAND,
+	IF_TYPE_SPINAND,
+	IF_TYPE_SPINOR,
+	IF_TYPE_RAMDISK,
+	IF_TYPE_MTD,
 	IF_TYPE_COUNT,			/* Number of interface types */
 };
+
+/* define mtd device devnum */
+#define BLK_MTD_NAND		0
+#define BLK_MTD_SPI_NAND	1
+#define BLK_MTD_SPI_NOR		2
 
 #define BLK_VEN_SIZE		40
 #define BLK_PRD_SIZE		20
 #define BLK_REV_SIZE		8
+
+/* define block device operation flags */
+#define BLK_PRE_RW		BIT(0)	/* Block prepare read & write*/
+#define BLK_MTD_CONT_WRITE	BIT(1)	/* Special for Nand device P/E */
 
 /*
  * Identifies the partition table type (ie. MBR vs GPT GUID) signature
@@ -70,6 +83,7 @@ struct blk_desc {
 	unsigned char	hwpart;		/* HW partition, e.g. for eMMC */
 	unsigned char	type;		/* device type */
 	unsigned char	removable;	/* removable device */
+	unsigned char	op_flag;	/* Some special operation flags */
 #ifdef CONFIG_LBA48
 	/* device can use 48bit addr (ATA/ATAPI v7) */
 	unsigned char	lba48;
@@ -112,7 +126,7 @@ struct blk_desc {
 #define PAD_TO_BLOCKSIZE(size, blk_desc) \
 	(PAD_SIZE(size, blk_desc->blksz))
 
-#if CONFIG_IS_ENABLED(BLOCK_CACHE)
+#ifdef CONFIG_BLOCK_CACHE
 /**
  * blkcache_read() - attempt to read a set of blocks from cache
  *
@@ -333,12 +347,12 @@ int blk_next_device(struct udevice **devp);
  * @devnum:	Device number, specific to the interface type, or -1 to
  *		allocate the next available number
  * @blksz:	Block size of the device in bytes (typically 512)
- * @lba:	Total number of blocks of the device
+ * @size:	Total size of the device in bytes
  * @devp:	the new device (which has not been probed)
  */
 int blk_create_device(struct udevice *parent, const char *drv_name,
 		      const char *name, int if_type, int devnum, int blksz,
-		      lbaint_t lba, struct udevice **devp);
+		      lbaint_t size, struct udevice **devp);
 
 /**
  * blk_create_devicef() - Create a new named block device
@@ -350,12 +364,22 @@ int blk_create_device(struct udevice *parent, const char *drv_name,
  * @devnum:	Device number, specific to the interface type, or -1 to
  *		allocate the next available number
  * @blksz:	Block size of the device in bytes (typically 512)
- * @lba:	Total number of blocks of the device
+ * @size:	Total size of the device in bytes
  * @devp:	the new device (which has not been probed)
  */
 int blk_create_devicef(struct udevice *parent, const char *drv_name,
 		       const char *name, int if_type, int devnum, int blksz,
-		       lbaint_t lba, struct udevice **devp);
+		       lbaint_t size, struct udevice **devp);
+
+/**
+ * blk_prepare_device() - Prepare a block device for use
+ *
+ * This reads partition information from the device if supported.
+ *
+ * @dev:	Device to prepare
+ * @return 0 if ok, -ve on error
+ */
+int blk_prepare_device(struct udevice *dev);
 
 /**
  * blk_unbind_all() - Unbind all device of the given interface type
@@ -380,17 +404,6 @@ int blk_unbind_all(int if_type);
 int blk_find_max_devnum(enum if_type if_type);
 
 /**
- * blk_next_free_devnum() - get the next device number for an interface type
- *
- * Finds the next number that is safe to use for a newly allocated device for
- * an interface type @if_type.
- *
- * @if_type:	Interface type to scan
- * @return next device number safe to use, or -ve on error
- */
-int blk_next_free_devnum(enum if_type if_type);
-
-/**
  * blk_select_hwpart() - select a hardware partition
  *
  * Select a hardware partition if the device supports it (typically MMC does)
@@ -407,15 +420,6 @@ int blk_select_hwpart(struct udevice *dev, int hwpart);
  * All devices with
  */
 int blk_get_from_parent(struct udevice *parent, struct udevice **devp);
-
-/**
- * blk_get_by_device() - Get the block device descriptor for the given device
- * @dev:	Instance of a storage device
- *
- * Return: With block device descriptor on success , NULL if there is no such
- *	   block device.
- */
-struct blk_desc *blk_get_by_device(struct udevice *dev);
 
 #else
 #include <errno.h>
@@ -675,5 +679,13 @@ const char *blk_get_if_type_name(enum if_type if_type);
  */
 int blk_common_cmd(int argc, char * const argv[], enum if_type if_type,
 		   int *cur_devnump);
+
+/**
+ * if_typename_to_iftype() - get iftype according to iftype name
+ *
+ * @if_typename: iftype name
+ * @return iftype index
+ */
+enum if_type if_typename_to_iftype(const char *if_typename);
 
 #endif

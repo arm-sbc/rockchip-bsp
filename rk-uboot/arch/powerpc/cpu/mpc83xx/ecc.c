@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2007-2011 Freescale Semiconductor, Inc.
  *
  * Dave Liu <daveliu@freescale.com>
  * based on the contribution of Marian Balakowicz <m8@semihalf.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -191,8 +192,8 @@ int do_ecc(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 			}
 
 			ddr->err_disable = val;
-			sync();
-			isync();
+			__asm__ __volatile__("sync");
+			__asm__ __volatile__("isync");
 			return 0;
 		} else if (strcmp(argv[1], "errdetectclr") == 0) {
 			val = ddr->err_detect;
@@ -249,8 +250,8 @@ int do_ecc(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 				printf("Incorrect command\n");
 
 			ddr->ecc_err_inject = val;
-			sync();
-			isync();
+			__asm__ __volatile__("sync");
+			__asm__ __volatile__("isync");
 			return 0;
 		} else if (strcmp(argv[1], "mirror") == 0) {
 			val = ddr->ecc_err_inject;
@@ -282,26 +283,26 @@ int do_ecc(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 
 				/* enable injects */
 				ddr->ecc_err_inject |= ECC_ERR_INJECT_EIEN;
-				sync();
-				isync();
+				__asm__ __volatile__("sync");
+				__asm__ __volatile__("isync");
 
 				/* write memory location injecting errors */
 				ppcDWstore((u32 *) i, pattern);
-				sync();
+				__asm__ __volatile__("sync");
 
 				/* disable injects */
 				ddr->ecc_err_inject &= ~ECC_ERR_INJECT_EIEN;
-				sync();
-				isync();
+				__asm__ __volatile__("sync");
+				__asm__ __volatile__("isync");
 
 				/* read data, this generates ECC error */
 				ppcDWload((u32 *) i, ret);
-				sync();
+				__asm__ __volatile__("sync");
 
 				/* re-initialize memory, double word write the location again,
 				 * generates new ECC code this time */
 				ppcDWstore((u32 *) i, writeback);
-				sync();
+				__asm__ __volatile__("sync");
 			}
 			enable_interrupts();
 			return 0;
@@ -321,29 +322,29 @@ int do_ecc(cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 
 				/* enable injects */
 				ddr->ecc_err_inject |= ECC_ERR_INJECT_EIEN;
-				sync();
-				isync();
+				__asm__ __volatile__("sync");
+				__asm__ __volatile__("isync");
 
 				/* write memory location injecting errors */
 				*(u32 *) i = 0xfedcba98UL;
-				sync();
+				__asm__ __volatile__("sync");
 
 				/* sub double word write,
 				 * bus will read-modify-write,
 				 * generates ECC error */
 				*((u32 *) i + 1) = 0x76543210UL;
-				sync();
+				__asm__ __volatile__("sync");
 
 				/* disable injects */
 				ddr->ecc_err_inject &= ~ECC_ERR_INJECT_EIEN;
-				sync();
-				isync();
+				__asm__ __volatile__("sync");
+				__asm__ __volatile__("isync");
 
 				/* re-initialize memory,
 				 * double word write the location again,
 				 * generates new ECC code this time */
 				ppcDWstore((u32 *) i, writeback);
-				sync();
+				__asm__ __volatile__("sync");
 			}
 			enable_interrupts();
 			return 0;

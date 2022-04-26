@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Bluegiga APX4 Development Kit
  *
@@ -11,6 +10,8 @@
  * Based on m28evk.c:
  * Copyright (C) 2011 Marek Vasut <marek.vasut@gmail.com>
  * on behalf of DENX Software Engineering GmbH
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -21,7 +22,6 @@
 #include <asm/arch/iomux-mx28.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/sys_proto.h>
-#include <env.h>
 #include <linux/mii.h>
 #include <miiphy.h>
 #include <netdev.h>

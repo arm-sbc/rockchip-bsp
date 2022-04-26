@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2014, Barco (www.barco.com)
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __PLATINUM_CONFIG_H__
@@ -36,6 +37,7 @@
 
 /* Ethernet config */
 #define CONFIG_FEC_MXC
+#define CONFIG_MII
 #define IMX_FEC_BASE				ENET_BASE_ADDR
 
 /* USB config */
@@ -44,6 +46,7 @@
 #define CONFIG_MXC_USB_FLAGS			0
 
 /* Memory config */
+#define CONFIG_NR_DRAM_BANKS			1
 #define PHYS_SDRAM				MMDC0_ARB_BASE_ADDR
 #ifndef PHYS_SDRAM_SIZE
 #define PHYS_SDRAM_SIZE				(1024 << 20)
@@ -94,6 +97,7 @@
  */
 
 /* Board startup config */
+#define CONFIG_MISC_INIT_R
 
 #define CONFIG_SYS_MEMTEST_START		PHYS_SDRAM
 #define CONFIG_SYS_MEMTEST_END			(CONFIG_SYS_MEMTEST_START + \
@@ -102,8 +106,21 @@
 #define CONFIG_BOOTCOMMAND			"run bootubi_scr"
 
 /* Miscellaneous configurable options */
+#define CONFIG_PREBOOT
 
 /* MTD/UBI/UBIFS config */
+
+#if (CONFIG_SYS_NAND_MAX_CHIPS == 1)
+#define MTDIDS_DEFAULT		"nand0=gpmi-nand"
+#define MTDPARTS_DEFAULT	"mtdparts=gpmi-nand:14M(spl),2M(uboot)," \
+				"512k(env1),512k(env2),-(ubi)"
+#elif (CONFIG_SYS_NAND_MAX_CHIPS == 2)
+#define MTDIDS_DEFAULT		"nand0=gpmi-nand"
+#define MTDPARTS_DEFAULT	"mtdparts=gpmi-nand:14M(spl),2M(uboot)," \
+				"512k(env1),512k(env2),495M(ubi0)," \
+				"14M(res0),2M(res1)," \
+				"512k(res2),512k(res3),-(ubi1)"
+#endif
 
 /*
  * Environment configuration
@@ -132,8 +149,8 @@
 	"baudrate=115200\0"						\
 	"boot_scr=boot.uboot\0"						\
 	"boot_vol=0\0"							\
-	"mtdids="CONFIG_MTDIDS_DEFAULT"\0"					\
-	"mtdparts="CONFIG_MTDPARTS_DEFAULT"\0"					\
+	"mtdids="MTDIDS_DEFAULT"\0"					\
+	"mtdparts="MTDPARTS_DEFAULT"\0"					\
 	"mmcfs=ext2\0"							\
 	"mmcrootpart=1\0"						\
 	\

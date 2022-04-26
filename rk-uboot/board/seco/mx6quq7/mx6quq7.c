@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Freescale Semiconductor, Inc.
  * Copyright (C) 2015 ECA Sinters
  *
  * Author: Fabio Estevam <fabio.estevam@freescale.com>
  * Modified by: Boris Brezillon <boris.brezillon@free-electrons.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <asm/arch/clock.h>
@@ -17,7 +18,7 @@
 #include <asm/mach-imx/boot_mode.h>
 #include <malloc.h>
 #include <mmc.h>
-#include <fsl_esdhc_imx.h>
+#include <fsl_esdhc.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <asm/arch/mxc_hdmi.h>

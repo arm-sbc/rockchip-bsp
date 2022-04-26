@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008
  * Texas Instruments
@@ -13,6 +12,8 @@
  *
  * (C) Copyright 2002
  * Gary Jennejohn, DENX Software Engineering, <garyj@denx.de>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -23,7 +24,6 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct gptimer *timer_base = (struct gptimer *)CONFIG_SYS_TIMERBASE;
-static ulong get_timer_masked(void);
 
 /*
  * Nothing really to do with interrupts, just starts up a counter.
@@ -68,7 +68,7 @@ void __udelay(unsigned long usec)
 	}
 }
 
-static ulong get_timer_masked(void)
+ulong get_timer_masked(void)
 {
 	/* current tick value */
 	ulong now = readl(&timer_base->tcrr) / (TIMER_CLOCK / CONFIG_SYS_HZ);

@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: BSD-3-Clause */
 /*
  * Altera SoCFPGA IOCSR configuration
+ *
+ * SPDX-License-Identifier:	BSD-3-Clause
  */
 
 #ifndef __SOCFPGA_IOCSR_CONFIG_H__
@@ -108,7 +109,7 @@ const unsigned long iocsr_scan_chain2_table[] = {
 	0x00018004,
 	0x06001209,
 	0x00004000,
-	0x20042412,
+	0x20002412,
 	0x00904800,
 	0x00000030,
 	0x80000000,

@@ -1,10 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014
- * Dirk Eibach, Guntermann & Drunck GmbH, dirk.eibach@gdsys.cc
+ * Dirk Eibach, Guntermann & Drunck GmbH, eibach@gdsys.de
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
-
-#ifdef CONFIG_GDSYS_LEGACY_DRIVERS
 
 #include <common.h>
 #include <i2c.h>
@@ -176,5 +175,3 @@ out:
 
 	return res;
 }
-
-#endif /* CONFIG_GDSYS_LEGACY_DRIVERS */

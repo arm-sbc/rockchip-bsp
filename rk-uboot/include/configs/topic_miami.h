@@ -1,14 +1,17 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2014 Topic Embedded Products
  *
  * Configuration for Zynq Evaluation and Development Board - Miami
  * See zynq-common.h for Zynq common configs
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_TOPIC_MIAMI_H
 #define __CONFIG_TOPIC_MIAMI_H
 
+#define CONFIG_ZYNQ_I2C0
+#define CONFIG_ZYNQ_I2C1
 
 /* Speed up boot time by ignoring the environment which we never used */
 
@@ -22,6 +25,8 @@
 
 /* SPL settings */
 #undef CONFIG_SPL_ETH_SUPPORT
+#undef CONFIG_SYS_SPI_U_BOOT_OFFS
+#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x20000
 #undef CONFIG_SPL_MAX_FOOTPRINT
 #define CONFIG_SPL_MAX_FOOTPRINT	CONFIG_SYS_SPI_U_BOOT_OFFS
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot.img"
@@ -40,12 +45,17 @@
 /* FPGA commands that we don't use */
 
 /* Extras */
+#define CONFIG_CMD_MEMTEST
 #undef CONFIG_SYS_MEMTEST_START
 #define CONFIG_SYS_MEMTEST_START	0
 #undef CONFIG_SYS_MEMTEST_END
 #define CONFIG_SYS_MEMTEST_END	0x18000000
 
 /* Faster flash, ours may run at 108 MHz */
+#undef CONFIG_SF_DEFAULT_SPEED
+#define CONFIG_SF_DEFAULT_SPEED	108000000
+#define CONFIG_SF_DEFAULT_MODE SPI_MODE_0
+#define CONFIG_ENV_SPI_MAX_HZ CONFIG_SF_DEFAULT_SPEED
 #undef CONFIG_SPI_FLASH_WINBOND
 
 /* Setup proper boot sequences for Miami boards */
@@ -76,6 +86,8 @@
 #else
 # define EXTRA_ENV_USB
 #endif
+
+#undef CONFIG_PREBOOT
 
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS	\
@@ -119,5 +131,9 @@
 	"if fatload mmc 0 0x1900000 ${bootscript}; then source 0x1900000; " \
 	"fi; fi; run $modeboot"
 #undef CONFIG_DISPLAY_BOARDINFO
+
+/* Further tweaks to reduce image size */
+#undef CONFIG_CMD_BOOTZ
+#undef CONFIG_CMD_NET
 
 #endif /* __CONFIG_TOPIC_MIAMI_H */

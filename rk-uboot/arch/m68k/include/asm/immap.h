@@ -1,9 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * ColdFire Internal Memory Map and Defines
  *
  * Copyright 2004-2012 Freescale Semiconductor, Inc.
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __IMMAP_H
@@ -362,7 +363,7 @@
 #endif
 
 #define CONFIG_SYS_INTR_BASE		(MMAP_INTC0)
-#define CONFIG_SYS_NUM_IRQS		(192)
+#define CONFIG_SYS_NUM_IRQS		(128)
 
 #endif				/* CONFIG_M54418 */
 

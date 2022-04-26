@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
  *
@@ -7,11 +6,12 @@
  *
  * (C) Copyright 2002, 2003
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
-#include <env.h>
 #include <errno.h>
 #include <pci.h>
 #include <asm/io.h>

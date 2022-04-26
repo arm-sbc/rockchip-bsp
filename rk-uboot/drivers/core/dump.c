@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -8,16 +9,16 @@
 #include <mapmem.h>
 #include <dm/root.h>
 #include <dm/util.h>
-#include <dm/uclass-internal.h>
 
 static void show_devices(struct udevice *dev, int depth, int last_flag)
 {
 	int i, is_last;
 	struct udevice *child;
+	int pre_reloc, remained;
 
-	/* print the first 20 characters to not break the tree-format. */
-	printf(" %-10.10s  %3d  [ %c ]   %-20.20s  ", dev->uclass->uc_drv->name,
-	       dev_get_uclass_index(dev, NULL),
+	/* print the first 11 characters to not break the tree-format. */
+	printf(" %08lx    %-10.10s [ %c ]   %-25.25s  ",
+	       (ulong)dev, dev->uclass->uc_drv->name,
 	       dev->flags & DM_FLAG_ACTIVATED ? '+' : ' ', dev->driver->name);
 
 	for (i = depth; i >= 0; i--) {
@@ -35,7 +36,14 @@ static void show_devices(struct udevice *dev, int depth, int last_flag)
 		}
 	}
 
-	printf("%s\n", dev->name);
+	pre_reloc = dev_read_bool(dev, "u-boot,dm-pre-reloc") ||
+		    dev_read_bool(dev, "u-boot,dm-spl");
+	if (pre_reloc)
+		remained = !list_empty(&dev->uclass_node);
+	else
+		remained = 0;
+
+	printf("%s %s%s\n", dev->name, pre_reloc ? "*" : "", remained ? "*" : "");
 
 	list_for_each_entry(child, &dev->child_head, sibling_node) {
 		is_last = list_is_last(&child->sibling_node, &dev->child_head);
@@ -49,8 +57,8 @@ void dm_dump_all(void)
 
 	root = dm_root();
 	if (root) {
-		printf(" Class     Index  Probed  Driver                Name\n");
-		printf("-----------------------------------------------------------\n");
+		printf(" Addr        Class      Probed    Driver                   Name\n");
+		printf("-------------------------------------------------------------------------\n");
 		show_devices(root, -1, 0);
 	}
 }
@@ -62,10 +70,12 @@ void dm_dump_all(void)
  *
  * @dev:	Device to display
  */
-static void dm_display_line(struct udevice *dev, int index)
+static void dm_display_line(struct udevice *dev)
 {
-	printf("%-3i %c %s @ %08lx", index,
-	       dev->flags & DM_FLAG_ACTIVATED ? '*' : ' ',
+	printf("  %c [ %c ] %s @ %08lx",
+	       dev_read_bool(dev, "u-boot,dm-pre-pre_reloc") ||
+	       dev_read_bool(dev, "u-boot,dm-spl") ? '*' : ' ',
+	       dev->flags & DM_FLAG_ACTIVATED ? '+' : ' ',
 	       dev->name, (ulong)map_to_sysmem(dev));
 	if (dev->seq != -1 || dev->req_seq != -1)
 		printf(", seq %d, (req %d)", dev->seq, dev->req_seq);
@@ -80,7 +90,6 @@ void dm_dump_uclass(void)
 
 	for (id = 0; id < UCLASS_COUNT; id++) {
 		struct udevice *dev;
-		int i = 0;
 
 		ret = uclass_get(id, &uc);
 		if (ret)
@@ -89,9 +98,8 @@ void dm_dump_uclass(void)
 		printf("uclass %d: %s\n", id, uc->uc_drv->name);
 		if (list_empty(&uc->dev_head))
 			continue;
-		uclass_foreach_dev(dev, uc) {
-			dm_display_line(dev, i);
-			i++;
+		list_for_each_entry(dev, &uc->dev_head, uclass_node) {
+			dm_display_line(dev);
 		}
 		puts("\n");
 	}

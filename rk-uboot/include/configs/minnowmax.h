@@ -1,6 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -13,6 +14,8 @@
 #include <configs/x86-common.h>
 
 #define CONFIG_SYS_MONITOR_LEN		(1 << 20)
+
+#define CONFIG_MISC_INIT_R
 
 #define CONFIG_STD_DEVICES_SETTINGS	"stdin=usbkbd,serial\0" \
 					"stdout=vidconsole,serial\0" \

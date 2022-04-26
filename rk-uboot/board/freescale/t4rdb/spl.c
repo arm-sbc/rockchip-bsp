@@ -1,13 +1,14 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
  *
  * Author: Chunhe Lan <Chunhe.Lan@freescale.com>
+ *
+ * SPDX-License-Identifier:    GPL-2.0+
  */
 
 #include <common.h>
 #include <console.h>
-#include <env_internal.h>
+#include <environment.h>
 #include <asm/spl.h>
 #include <malloc.h>
 #include <ns16550.h>

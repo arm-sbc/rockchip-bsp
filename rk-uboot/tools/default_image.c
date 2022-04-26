@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008 Semihalf
  *
@@ -11,15 +10,15 @@
  *		some functions added to address abstraction
  *
  * All rights reserved.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "imagetool.h"
 #include "mkimage.h"
 
 #include <image.h>
-#include <tee/optee.h>
 #include <u-boot/crc.h>
-#include <imximage.h>
 
 static image_header_t header;
 
@@ -91,8 +90,6 @@ static void image_set_header(void *ptr, struct stat *sbuf, int ifd,
 	uint32_t checksum;
 	time_t time;
 	uint32_t imagesize;
-	uint32_t ep;
-	uint32_t addr;
 
 	image_header_t * hdr = (image_header_t *)ptr;
 
@@ -101,29 +98,19 @@ static void image_set_header(void *ptr, struct stat *sbuf, int ifd,
 				sizeof(image_header_t)),
 			sbuf->st_size - sizeof(image_header_t));
 
-	time = imagetool_get_source_date(params->cmdname, sbuf->st_mtime);
-	ep = params->ep;
-	addr = params->addr;
-
+	time = imagetool_get_source_date(params, sbuf->st_mtime);
 	if (params->type == IH_TYPE_FIRMWARE_IVT)
 		/* Add size of CSF minus IVT */
-		imagesize = sbuf->st_size - sizeof(image_header_t)
-			    + 0x2060 - sizeof(flash_header_v2_t);
-
+		imagesize = sbuf->st_size - sizeof(image_header_t) + 0x1FE0;
 	else
 		imagesize = sbuf->st_size - sizeof(image_header_t);
-
-	if (params->os == IH_OS_TEE) {
-		addr = optee_image_get_load_addr(hdr);
-		ep = optee_image_get_entry_point(hdr);
-	}
 
 	/* Build new header */
 	image_set_magic(hdr, IH_MAGIC);
 	image_set_time(hdr, time);
 	image_set_size(hdr, imagesize);
-	image_set_load(hdr, addr);
-	image_set_ep(hdr, ep);
+	image_set_load(hdr, params->addr);
+	image_set_ep(hdr, params->ep);
 	image_set_dcrc(hdr, checksum);
 	image_set_os(hdr, params->os);
 	image_set_arch(hdr, params->arch);

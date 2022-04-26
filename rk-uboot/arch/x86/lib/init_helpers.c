@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2011
  * Graeme Russ, <graeme.russ@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -10,25 +11,22 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+/* Get the top of usable RAM */
+__weak ulong board_get_usable_ram_top(ulong total_size)
+{
+	return gd->ram_size;
+}
+
 int init_cache_f_r(void)
 {
-	bool do_mtrr = CONFIG_IS_ENABLED(X86_32BIT_INIT) ||
-		 IS_ENABLED(CONFIG_FSP_VERSION2);
+#if CONFIG_IS_ENABLED(X86_32BIT_INIT) && !defined(CONFIG_HAVE_FSP)
 	int ret;
 
-	do_mtrr &= !IS_ENABLED(CONFIG_FSP_VERSION1) &&
-		!IS_ENABLED(CONFIG_SYS_SLIMBOOTLOADER);
-
-	if (do_mtrr) {
-		ret = mtrr_commit(false);
-		/*
-		 * If MTRR MSR is not implemented by the processor, just ignore
-		 * it
-		 */
-		if (ret && ret != -ENOSYS)
-			return ret;
-	}
-
+	ret = mtrr_commit(false);
+	/* If MTRR MSR is not implemented by the processor, just ignore it */
+	if (ret && ret != -ENOSYS)
+		return ret;
+#endif
 	/* Initialise the CPU cache(s) */
 	return init_cache();
 }

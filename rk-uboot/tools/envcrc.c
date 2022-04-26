@@ -1,7 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2001
  * Paolo Scaffardi, AIRVENT SAM s.p.a - RIMINI(ITALY), arsenio@tin.it
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <errno.h>
@@ -59,9 +60,9 @@
 
 
 #ifdef CONFIG_BUILD_ENVCRC
-# include <env_internal.h>
+# include <environment.h>
 extern unsigned int env_size;
-extern env_t embedded_environment;
+extern env_t environment;
 #endif	/* CONFIG_BUILD_ENVCRC */
 
 extern uint32_t crc32 (uint32_t, const unsigned char *, unsigned int);
@@ -71,7 +72,7 @@ int main (int argc, char **argv)
 #ifdef CONFIG_BUILD_ENVCRC
 	unsigned char pad = 0x00;
 	uint32_t crc;
-	unsigned char *envptr = (unsigned char *)&embedded_environment,
+	unsigned char *envptr = (unsigned char *)&environment,
 		*dataptr = envptr + ENV_HEADER_SIZE;
 	unsigned int datasize = ENV_SIZE;
 	unsigned int eoe;

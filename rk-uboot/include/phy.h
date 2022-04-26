@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2011 Freescale Semiconductor, Inc.
  *	Andy Fleming <afleming@gmail.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * This file pretty much stolen from Linux's mii.h/ethtool.h/phy.h
  */
@@ -17,11 +18,6 @@
 #include <phy_interface.h>
 
 #define PHY_FIXED_ID		0xa5a55a5a
-/*
- * There is no actual id for this.
- * This is just a dummy id for gmii2rgmmi converter.
- */
-#define PHY_GMII2RGMII_ID	0x5a5a5a5a
 
 #define PHY_MAX_ADDR 32
 
@@ -374,7 +370,6 @@ int gen10g_startup(struct phy_device *phydev);
 int gen10g_shutdown(struct phy_device *phydev);
 int gen10g_discover_mmds(struct phy_device *phydev);
 
-int phy_b53_init(void);
 int phy_mv88e61xx_init(void);
 int phy_aquantia_init(void);
 int phy_atheros_init(void);
@@ -386,7 +381,6 @@ int phy_lxt_init(void);
 int phy_marvell_init(void);
 int phy_micrel_ksz8xxx_init(void);
 int phy_micrel_ksz90x1_init(void);
-int phy_meson_gxl_init(void);
 int phy_natsemi_init(void);
 int phy_realtek_init(void);
 int phy_smsc_init(void);
@@ -396,7 +390,6 @@ int phy_vitesse_init(void);
 int phy_xilinx_init(void);
 int phy_mscc_init(void);
 int phy_fixed_init(void);
-int phy_xilinx_gmii2rgmii_init(void);
 
 int board_phy_config(struct phy_device *phydev);
 int get_phy_id(struct mii_dev *bus, int addr, int devad, u32 *phy_id);

@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2017 Marek Behun <marek.behun@nic.cz>
+ *
+ * SPDX-License-Identifier:     GPL-2.0+
  */
 
 / {
@@ -42,7 +43,7 @@
 	u-boot,dm-pre-reloc;
 
 	spi-flash@0 {
-		compatible = "jedec,spi-nor";
+		compatible = "spi-flash";
 		reg = <0>;
 		spi-max-frequency = <40000000>;
 		u-boot,dm-pre-reloc;

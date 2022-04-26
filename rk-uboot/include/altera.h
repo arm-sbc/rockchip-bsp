@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2002
  * Rich Ireland, Enterasys Networks, rireland@enterasys.com.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <fpga.h>
@@ -39,8 +40,6 @@ enum altera_iface {
 	fast_passive_parallel,
 	/* fast passive parallel with security (FPPS) */
 	fast_passive_parallel_security,
-	/* secure device manager (SDM) mailbox */
-	secure_device_manager_mailbox,
 	/* insert all new types before this */
 	max_altera_iface_type,
 };
@@ -56,8 +55,6 @@ enum altera_family {
 	Altera_StratixII,
 	/* StratixV Family */
 	Altera_StratixV,
-	/* Stratix10 Family */
-	Intel_FPGA_Stratix10,
 	/* SoCFPGA Family */
 	Altera_SoCFPGA,
 
@@ -118,10 +115,6 @@ int socfpga_load(Altera_desc *desc, const void *rbf_data, size_t rbf_size);
 
 #ifdef CONFIG_FPGA_STRATIX_V
 int stratixv_load(Altera_desc *desc, const void *rbf_data, size_t rbf_size);
-#endif
-
-#ifdef CONFIG_FPGA_STRATIX10
-int stratix10_load(Altera_desc *desc, const void *rbf_data, size_t rbf_size);
 #endif
 
 #endif /* _ALTERA_H_ */

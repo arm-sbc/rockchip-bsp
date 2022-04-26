@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011, Google Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 
@@ -17,7 +18,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 enum {
-	RECORD_COUNT = CONFIG_VAL(BOOTSTAGE_RECORD_COUNT),
+	RECORD_COUNT = CONFIG_BOOTSTAGE_RECORD_COUNT,
 };
 
 struct bootstage_record {
@@ -99,13 +100,6 @@ ulong bootstage_add_record(enum bootstage_id id, const char *name,
 	struct bootstage_data *data = gd->bootstage;
 	struct bootstage_record *rec;
 
-	/*
-	 * initf_bootstage() is called very early during boot but since hang()
-	 * calls bootstage_error() we can be called before bootstage is set up.
-	 * Add a check to avoid this.
-	 */
-	if (!data)
-		return mark;
 	if (flags & BOOTSTAGEF_ALLOC)
 		id = data->next_id++;
 
@@ -333,7 +327,7 @@ void bootstage_report(void)
 	}
 	if (data->rec_count > RECORD_COUNT)
 		printf("Overflowed internal boot id table by %d entries\n"
-		       "Please increase CONFIG_(SPL_)BOOTSTAGE_RECORD_COUNT\n",
+		       "- please increase CONFIG_BOOTSTAGE_RECORD_COUNT\n",
 		       data->rec_count - RECORD_COUNT);
 
 	puts("\nAccumulated time:\n");
@@ -462,7 +456,7 @@ int bootstage_unstash(const void *base, int size)
 
 	if (data->rec_count + hdr->count > RECORD_COUNT) {
 		debug("%s: Bootstage has %d records, we have space for %d\n"
-			"Please increase CONFIG_(SPL_)BOOTSTAGE_RECORD_COUNT\n",
+			"- please increase CONFIG_BOOTSTAGE_USER_COUNT\n",
 		      __func__, hdr->count, RECORD_COUNT - data->rec_count);
 		return -ENOSPC;
 	}

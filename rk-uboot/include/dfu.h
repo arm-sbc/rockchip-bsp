@@ -1,10 +1,11 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * dfu.h - DFU flashable area description
  *
  * Copyright (C) 2012 Samsung Electronics
  * authors: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
  *	    Lukasz Majewski <l.majewski@samsung.com>
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __DFU_ENTITY_H_
@@ -22,6 +23,7 @@ enum dfu_device_type {
 	DFU_DEV_NAND,
 	DFU_DEV_RAM,
 	DFU_DEV_SF,
+	DFU_DEV_MTD,
 };
 
 enum dfu_layout {
@@ -66,6 +68,17 @@ struct nand_internal_data {
 	unsigned int ubi;
 };
 
+struct mtd_internal_data {
+	/* RAW programming */
+	u64 start;
+	u64 size;
+
+	unsigned int dev;
+	unsigned int part;
+	/* for nand/ubi use */
+	unsigned int ubi;
+};
+
 struct ram_internal_data {
 	void		*start;
 	unsigned int	size;
@@ -80,6 +93,7 @@ struct sf_internal_data {
 };
 
 #define DFU_NAME_SIZE			32
+#define DFU_CMD_BUF_SIZE		128
 #ifndef CONFIG_SYS_DFU_DATA_BUF_SIZE
 #define CONFIG_SYS_DFU_DATA_BUF_SIZE		(1024*1024*8)	/* 8 MiB */
 #endif
@@ -106,6 +120,7 @@ struct dfu_entity {
 		struct nand_internal_data nand;
 		struct ram_internal_data ram;
 		struct sf_internal_data sf;
+		struct mtd_internal_data mtd;
 	} data;
 
 	int (*get_medium_size)(struct dfu_entity *dfu, u64 *size);
@@ -201,7 +216,7 @@ static inline void dfu_set_defer_flush(struct dfu_entity *dfu)
 int dfu_write_from_mem_addr(struct dfu_entity *dfu, void *buf, int size);
 
 /* Device specific */
-#if CONFIG_IS_ENABLED(DFU_MMC)
+#ifdef CONFIG_DFU_MMC
 extern int dfu_fill_entity_mmc(struct dfu_entity *dfu, char *devstr, char *s);
 #else
 static inline int dfu_fill_entity_mmc(struct dfu_entity *dfu, char *devstr,
@@ -212,7 +227,18 @@ static inline int dfu_fill_entity_mmc(struct dfu_entity *dfu, char *devstr,
 }
 #endif
 
-#if CONFIG_IS_ENABLED(DFU_NAND)
+#ifdef CONFIG_DFU_MTD
+extern int dfu_fill_entity_mtd(struct dfu_entity *dfu, char *devstr, char *s);
+#else
+static inline int dfu_fill_entity_mtd(struct dfu_entity *dfu, char *devstr,
+				      char *s)
+{
+	puts("MTD support not available!\n");
+	return -1;
+}
+#endif
+
+#ifdef CONFIG_DFU_NAND
 extern int dfu_fill_entity_nand(struct dfu_entity *dfu, char *devstr, char *s);
 #else
 static inline int dfu_fill_entity_nand(struct dfu_entity *dfu, char *devstr,
@@ -223,7 +249,7 @@ static inline int dfu_fill_entity_nand(struct dfu_entity *dfu, char *devstr,
 }
 #endif
 
-#if CONFIG_IS_ENABLED(DFU_RAM)
+#ifdef CONFIG_DFU_RAM
 extern int dfu_fill_entity_ram(struct dfu_entity *dfu, char *devstr, char *s);
 #else
 static inline int dfu_fill_entity_ram(struct dfu_entity *dfu, char *devstr,
@@ -234,7 +260,7 @@ static inline int dfu_fill_entity_ram(struct dfu_entity *dfu, char *devstr,
 }
 #endif
 
-#if CONFIG_IS_ENABLED(DFU_SF)
+#ifdef CONFIG_DFU_SF
 extern int dfu_fill_entity_sf(struct dfu_entity *dfu, char *devstr, char *s);
 #else
 static inline int dfu_fill_entity_sf(struct dfu_entity *dfu, char *devstr,
@@ -258,7 +284,7 @@ static inline int dfu_fill_entity_sf(struct dfu_entity *dfu, char *devstr,
  *
  * @return 0 on success, otherwise error code
  */
-#if CONFIG_IS_ENABLED(DFU_TFTP)
+#ifdef CONFIG_DFU_TFTP
 int dfu_tftp_write(char *dfu_entity_name, unsigned int addr, unsigned int len,
 		   char *interface, char *devstring);
 #else

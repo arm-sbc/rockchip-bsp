@@ -1,6 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Google, Inc
+ *
+ * SPDX-License-Identifier:	GPL-2.0+
  *
  * Based on code from coreboot
  */
@@ -68,9 +69,9 @@ static void set_max_freq(void)
 	msr_t msr;
 
 	/* Enable speed step */
-	msr = msr_read(MSR_IA32_MISC_ENABLE);
-	msr.lo |= MISC_ENABLE_ENHANCED_SPEEDSTEP;
-	msr_write(MSR_IA32_MISC_ENABLE, msr);
+	msr = msr_read(MSR_IA32_MISC_ENABLES);
+	msr.lo |= (1 << 16);
+	msr_write(MSR_IA32_MISC_ENABLES, msr);
 
 	/*
 	 * Set guaranteed ratio [21:16] from IACORE_RATIOS to bits [15:8] of
@@ -80,7 +81,7 @@ static void set_max_freq(void)
 	perf_ctl.lo = (msr.lo & 0x3f0000) >> 8;
 
 	/*
-	 * Set guaranteed vid [22:16] from IACORE_VIDS to bits [7:0] of
+	 * Set guaranteed vid [21:16] from IACORE_VIDS to bits [7:0] of
 	 * the PERF_CTL
 	 */
 	msr = msr_read(MSR_IACORE_VIDS);
@@ -203,5 +204,4 @@ U_BOOT_DRIVER(cpu_x86_baytrail_drv) = {
 	.bind		= cpu_x86_bind,
 	.probe		= cpu_x86_baytrail_probe,
 	.ops		= &cpu_x86_baytrail_ops,
-	.flags		= DM_FLAG_PRE_RELOC,
 };
