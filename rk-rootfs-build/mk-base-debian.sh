@@ -1,19 +1,11 @@
 #!/bin/bash -e
 
-if [ "$RELEASE" == "stretch" ]; then
+if [ ! $RELEASE ]; then
 	RELEASE='stretch'
-elif [ "$RELEASE" == "buster" ]; then
-	RELEASE='buster'
-else
-    echo -e "\033[36m please input the os type,stretch or buster...... \033[0m"
 fi
 
-if [ "$ARCH" == "armhf" ]; then
+if [ ! $ARCH ]; then
 	ARCH='armhf'
-elif [ "$ARCH" == "arm64" ]; then
-	ARCH='arm64'
-else
-    echo -e "\033[36m please input the os type,armhf or arm64...... \033[0m"
 fi
 
 if [ ! $TARGET ]; then
