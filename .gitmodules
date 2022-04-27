@@ -1,9 +1,0 @@
-[submodule "rkdeveloptool"]
-	path = rkdeveloptool
-	url = https://github.com/arm-sbc/rkdeveloptool.git
-[submodule "rk-kernel"]
-	path = rk-kernel
-	url = https://github.com/arm-sbc/rockchip-bsp
-[submodule "rk-uboot"]
-	path = rk-uboot
-	url = https://github.com/arm-sbc/rockchip-bsp
