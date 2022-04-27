@@ -1,0 +1,6 @@
+[submodule "rk-uboot"]
+	path = rk-uboot
+	url = https://github.com/arm-sbc/rk-uboot
+[submodule "rk-kernel"]
+	path = rk-kernel
+	url = https://github.com/arm-sbc/rk-kernel
