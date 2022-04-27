@@ -4,3 +4,6 @@
 [submodule "rk-kernel"]
 	path = rk-kernel
 	url = https://github.com/arm-sbc/rk-kernel
+[submodule "rkdeveloptool"]
+	path = rkdeveloptool
+	url = https://github.com/arm-sbc/rkdeveloptool
