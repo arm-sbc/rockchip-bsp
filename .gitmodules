@@ -7,3 +7,6 @@
 [submodule "rk-kernel"]
 	path = rk-kernel
 	url = https://github.com/arm-sbc/rockchip-bsp
+[submodule "rk-u-boot"]
+	path = rk-u-boot
+	url = https://github.com/arm-sbc/rockchip-bsp
